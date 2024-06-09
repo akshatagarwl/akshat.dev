@@ -1,0 +1,36 @@
+---
+title: 'Optimizing Go GitHub Actions for Cost Efficiency'
+publishedAt: '2024-06-07'
+summary: 'This is your first blog post.'
+draft: 'true'
+---
+
+# Problem we faced and background on GitHub Actions billable minutes
+
+A while ago we faced a challenge with GitHub Actions failing due to our
+included minutes being exhausted. GitHub Actions provides approximaely 2,000
+minutes per month for private repositories, and the Linux runners consume
+minutes in multiples of 1. So even if a job takes only a few seconds, a full
+minute is deducted from the total billable minutes.
+
+One of our main bottlenecks was running lint checks in our CI pipeline. With a
+Go monorepo, we couldn't simply cd into every Go module and lint them serially,
+as it would take an excessive amount of time. Instead, we resolved modules and
+created a matrix to spawn a single job for each module. While this approach
+reduced the overall waiting time for lint checks, it also meant that even if a
+particular module took only 2 seconds to lint, a full minute would be deducted.
+
+Moreover, this process was redundant since most pull requests (PRs) would only
+change a few modules, making it unnecessary to run lint checks on every single
+module.
+
+# The solution
+
+To address this issue, we modified our resolve modules script to only include
+modules that have been changed from the main branch. This way, we only run lint
+jobs on the modified modules. As a result, our average billable time for the
+lint action dropped significantly, from approximately 2 hours to around 5 minutes.
+
+How to run golangci-lint checks on a Go monorepo?
+The matrix solution
+Why can't we use only-new-issues (new-from-patch)
