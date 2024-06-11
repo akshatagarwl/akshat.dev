@@ -13,10 +13,10 @@ export const metadata: Metadata = {
     default: 'Akshat Agarwal',
     template: '%s | Akshat Agarwal',
   },
-  description: 'Developer, writer, and creator.',
+  description: 'Builder',
   openGraph: {
     title: 'Akshat Agarwal',
-    description: 'Developer, writer, and creator.',
+    description: 'Builder',
     url: 'https://akshat.dev',
     siteName: 'Akshat Agarwal',
     locale: 'en_US',
