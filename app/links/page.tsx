@@ -14,6 +14,11 @@ export default function Page() {
       title: 'Why books donʼt work',
       url: 'https://andymatuschak.org/books/',
     },
+    {
+      title:
+        'Speed matters: Why working quickly is more important than it seems',
+      url: 'https://jsomers.net/blog/speed-matters',
+    },
   ];
 
   return (
