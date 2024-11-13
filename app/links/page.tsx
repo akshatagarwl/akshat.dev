@@ -19,6 +19,10 @@ export default function Page() {
         'Speed matters: Why working quickly is more important than it seems',
       url: 'https://jsomers.net/blog/speed-matters',
     },
+    {
+      title: "Things That Aren't Doing the Thing",
+      url: 'https://strangestloop.io/essays/things-that-arent-doing-the-thing',
+    },
   ];
 
   return (
