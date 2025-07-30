@@ -1,5 +1,5 @@
 export default async function sitemap() {
-  let routes = ['', '/work', '/links'].map((route) => ({
+  let routes = ['', '/links'].map((route) => ({
     url: `https://akshat.dev${route}`,
     lastModified: new Date().toISOString().split('T')[0],
   }));
