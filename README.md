@@ -1,31 +1,37 @@
 # akshat.dev
 
-Personal website built as a static Next.js export for Cloudflare Pages.
+Personal website. React 19 and Tailwind 4, built with [vinext](https://github.com/cloudflare/vinext)
+and served from a Cloudflare Worker.
+
+vinext reimplements the Next.js API surface on Vite, so the `app/` directory and
+`next.config.mjs` are still the source of truth even though the `next` package is
+not installed.
 
 ## Local development
 
-Run `mise run dev`. To reproduce the production build, run `mise run build`.
+Run `mise run dev`. To reproduce the production build, run `mise run build`, then
+`bun run start` to serve the built Worker locally.
 
-## Cloudflare Pages
+## Deployment
 
-Project settings:
+Pushing to `master` builds and deploys through Workers Builds. To deploy by hand,
+run `bun run deploy`, which builds and then runs `wrangler deploy` against the
+generated `dist/server/wrangler.json`.
 
-- Build command: `bun install --frozen-lockfile && bun run build`
-- Build output directory: `out`
-- Framework preset: Next.js (Static HTML Export)
-- Environment variable: `BUN_VERSION=1.4.2`, which needs build system version v2 or later
-- Production branch: `master`
+## Configuration worth knowing
 
-`public/_headers` carries the security headers, and Pages reads it from the
-exported output.
+- **Security headers live in `next.config.mjs`, not `public/_headers`.** On
+  Workers, `_headers` only reaches static assets, never Worker-rendered HTML, so
+  the headers would silently vanish from the pages themselves. The `source` is
+  `/(.*)` because `/:path*` does not match the root path.
+- **Tailwind is configured in CSS**, in `app/global.css` via `@theme` and
+  `@plugin`. There is no `tailwind.config.ts` and no PostCSS step; styling runs
+  through `@tailwindcss/vite`.
+- **Metadata routes need `export const dynamic = 'force-static'`**
+  (`app/robots.ts`, `app/sitemap.ts`).
 
 ## Hostnames
 
 `akshat.dev` is canonical and every page declares a canonical URL under it.
-
-`akshat.dev` and `www.akshat.dev` are both attached to the Pages project and both
-serve the site, so neither needs a redirect rule. The canonical tags are what tell
-search engines which one counts.
-
-The `REMOVED` Worker redirects `REMOVED` to
-`REMOVED`.
+`www.akshat.dev` serves the same Worker. `REMOVED` redirects to
+`REMOVED` via the `REMOVED` Worker.
