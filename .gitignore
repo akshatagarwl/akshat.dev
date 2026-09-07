@@ -36,3 +36,5 @@ next-env.d.ts
 
 # nix
 .envrc
+/dist/
+.vinext/

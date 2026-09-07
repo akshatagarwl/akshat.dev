@@ -35,7 +35,7 @@ export default function Page() {
       <h1 className="font-medium text-2xl mb-8 tracking-tighter">links</h1>
       <div className="prose prose-neutral dark:prose-invert">
         <p>A bunch of blogs, comments, books I keep coming back to:</p>
-        <hr className="my-6! border-neutral-100 dark:border-neutral-800" />
+        <hr className="border-neutral-100 dark:border-neutral-800" />
         {links.map((link) => (
           <Link
             key={link.title}
