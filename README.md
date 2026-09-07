@@ -14,8 +14,7 @@ Project settings:
 - Build output directory: `out`
 - Framework preset: Next.js (Static HTML Export)
 - Environment variable: `BUN_VERSION=1.4.2`, which needs build system version v2 or later
-- Production branch: `cloudflare-pages` until Vercel is decommissioned, because a
-  push to `master` triggers a Vercel production deploy
+- Production branch: `master`
 
 `public/_headers` carries the security headers, and Pages reads it from the
 exported output.
@@ -28,6 +27,5 @@ exported output.
 serve the site, so neither needs a redirect rule. The canonical tags are what tell
 search engines which one counts.
 
-`REMOVED` is the only hostname that needs a rule: a redirect to
-`REMOVED`. It previously returned the PDF inline from a Node
-route, so the URL survives but the response is now a redirect.
+The `REMOVED` Worker redirects `REMOVED` to
+`REMOVED`.
