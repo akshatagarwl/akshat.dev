@@ -6,7 +6,7 @@
   // Domains only: never expose workers.dev or preview URLs.
   "workers_dev": false,
   "preview_urls": false,
-  "main": "worker.ts",
+  "main": "vinext/server/fetch-handler",
   "assets": {
     "directory": "dist/client",
     "not_found_handling": "none",
