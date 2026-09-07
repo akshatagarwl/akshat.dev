@@ -1,3 +1,5 @@
+export const dynamic = 'force-static';
+
 export default async function sitemap() {
   let routes = ['', '/links'].map((route) => ({
     url: `https://akshat.dev${route}`,
