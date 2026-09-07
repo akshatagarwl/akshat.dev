@@ -17,20 +17,17 @@ Project settings:
 - Production branch: `cloudflare-pages` until Vercel is decommissioned, because a
   push to `master` triggers a Vercel production deploy
 
-Pages reads `public/_headers` and `public/_redirects` from the exported output. They
-carry the security headers and the `/api/resume` path redirect.
+`public/_headers` carries the security headers, and Pages reads it from the
+exported output.
 
-## Hostname routing
+## Hostnames
 
-`akshat.dev` is canonical. `www` redirects to it, and `REMOVED` serves
-`resume.pdf` inline at its root, which is what it did on Vercel.
+`akshat.dev` is canonical and every page declares a canonical URL under it.
 
-`_redirects` cannot match on hostname, so neither is handled by this repository.
-Both are zone-level rules in the Cloudflare dashboard, and both only fire on
-proxied records once the zone is active:
+`akshat.dev` and `www.akshat.dev` are both attached to the Pages project and both
+serve the site, so neither needs a redirect rule. The canonical tags are what tell
+search engines which one counts.
 
-- A redirect rule sending `www.akshat.dev` to `https://akshat.dev` with the path
-  preserved.
-- A URL rewrite rule on `REMOVED` rewriting the path to `/resume.pdf`,
-  so the PDF is still returned with a 200 rather than a cross-host redirect. A
-  rewrite is required because a redirect would change the URL and the status.
+`REMOVED` is the only hostname that needs a rule: a redirect to
+`REMOVED`. It previously returned the PDF inline from a Node
+route, so the URL survives but the response is now a redirect.
