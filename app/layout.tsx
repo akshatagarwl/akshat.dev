@@ -3,11 +3,9 @@ import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { Navbar } from './components/nav';
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://akshat.dev'),
-  alternates: {
-    canonical: '/',
-  },
   title: {
     default: 'Akshat Agarwal',
     template: '%s | Akshat Agarwal',
