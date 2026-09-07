@@ -22,6 +22,15 @@ carry the security headers and the `/api/resume` path redirect.
 
 ## Hostname routing
 
-`_redirects` cannot match on hostname, so `www` and `resume` are **not** handled by
-this repository. They need zone-level Redirect Rules under Rules in the Cloudflare
-dashboard, and they only fire on proxied records once the zone is active.
+`akshat.dev` is canonical. `www` redirects to it, and `REMOVED` serves
+`resume.pdf` inline at its root, which is what it did on Vercel.
+
+`_redirects` cannot match on hostname, so neither is handled by this repository.
+Both are zone-level rules in the Cloudflare dashboard, and both only fire on
+proxied records once the zone is active:
+
+- A redirect rule sending `www.akshat.dev` to `https://akshat.dev` with the path
+  preserved.
+- A URL rewrite rule on `REMOVED` rewriting the path to `/resume.pdf`,
+  so the PDF is still returned with a 200 rather than a cross-host redirect. A
+  rewrite is required because a redirect would change the URL and the status.
