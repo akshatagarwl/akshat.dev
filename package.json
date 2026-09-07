@@ -5,17 +5,17 @@
     "build": "rm -rf out && next build"
   },
   "dependencies": {
-    "@tailwindcss/typography": "^0.5.10",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/typography": "0.5.20",
     "@types/node": "26.5.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
-    "autoprefixer": "^10.4.21",
     "geist": "1.7.2",
     "next": "16.3.4",
     "postcss": "^8.5.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "tailwindcss": "^3.4.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "7.0.2"
   },
   "prettier": {
