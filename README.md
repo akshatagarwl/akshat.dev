@@ -13,7 +13,7 @@ Project settings:
 - Build command: `bun install --frozen-lockfile && bun run build`
 - Build output directory: `out`
 - Framework preset: Next.js (Static HTML Export)
-- Environment variable: `BUN_VERSION=1.3.14`, which needs build system version v2 or later
+- Environment variable: `BUN_VERSION=1.4.2`, which needs build system version v2 or later
 - Production branch: `cloudflare-pages` until Vercel is decommissioned, because a
   push to `master` triggers a Vercel production deploy
 
