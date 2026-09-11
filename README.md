@@ -33,5 +33,4 @@ generated `dist/server/wrangler.json`.
 ## Hostnames
 
 `akshat.dev` is canonical and every page declares a canonical URL under it.
-`www.akshat.dev` serves the same Worker. `REMOVED` redirects to
-`REMOVED` via the `REMOVED` Worker.
+`www.akshat.dev` serves the same Worker.
