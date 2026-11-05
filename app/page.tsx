@@ -4,6 +4,30 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
 };
 
+const projects = [
+  {
+    title: 'linguabench',
+    url: 'https://linguabench.akshat.dev',
+    description: 'Same question, different language, different answer.',
+  },
+  {
+    title: 'anemoia',
+    url: 'https://anemoia.akshat.dev',
+    description: "Archival films of the world's cities, on a globe.",
+  },
+  {
+    title: 'openelections.in',
+    url: 'https://openelections.in',
+    description: 'Make the source code of ECINet/ERONet public.',
+  },
+  {
+    title: 'transfers.fyi',
+    url: 'https://transfers.fyi',
+    description:
+      'The Indian officers transferred most, and the record behind each move.',
+  },
+];
+
 export default function Page() {
   return (
     <section>
@@ -11,6 +35,25 @@ export default function Page() {
         hey, I'm akshat 👋
       </h1>
       <p className="prose prose-neutral dark:prose-invert"></p>
+      <h2 className="font-medium text-xl mb-4 tracking-tighter">projects</h2>
+      <div className="flex flex-col space-y-4">
+        {projects.map((project) => (
+          <a
+            key={project.url}
+            className="flex flex-col space-y-1 group"
+            rel="noopener noreferrer"
+            target="_blank"
+            href={project.url}
+          >
+            <span className="text-neutral-900 dark:text-neutral-100 tracking-tight group-hover:underline">
+              {project.title}
+            </span>
+            <span className="text-neutral-600 dark:text-neutral-400">
+              {project.description}
+            </span>
+          </a>
+        ))}
+      </div>
       <ul className="font-sm mt-8 flex flex-col space-x-0 space-y-2 text-neutral-600 md:flex-row md:space-x-4 md:space-y-0 dark:text-neutral-300">
         <li>
           <a
