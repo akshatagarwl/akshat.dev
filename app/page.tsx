@@ -6,6 +6,21 @@ export const metadata: Metadata = {
 
 const projects = [
   {
+    title: 'sigiro',
+    url: 'https://github.com/akshatagarwl/sigiro',
+    description: 'OpenTelemetry traces, logs, metrics, and profiles in one place.',
+  },
+  {
+    title: 'otelprofile-go',
+    url: 'https://github.com/akshatagarwl/otelprofile-go',
+    description: 'Continuous profiling for Go, exported as OTLP Profiles.',
+  },
+  {
+    title: 'otelprofile-rs',
+    url: 'https://github.com/akshatagarwl/otelprofile-rs',
+    description: 'Experimental continuous profiling for Rust with OTLP export.',
+  },
+  {
     title: 'linguabench',
     url: 'https://linguabench.akshat.dev',
     description: 'Same question, different language, different answer.',
