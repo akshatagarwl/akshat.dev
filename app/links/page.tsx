@@ -8,6 +8,10 @@ export const metadata: Metadata = {
 export default function Page() {
   const links = [
     {
+      title: 'Neil Postman — Foreword to Amusing Ourselves to Death',
+      url: 'https://www.tau.ac.il/education/muse/maslool/boidem/170foreword.html',
+    },
+    {
       title: "Stop Acting Like You're Famous",
       url: 'https://ajkprojects.com/stopactinglikeyourefamous',
     },
