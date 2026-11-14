@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
@@ -68,6 +69,17 @@ export default function Page() {
             </span>
           </a>
         ))}
+      </div>
+      <h2 className="font-medium text-xl mt-12 mb-4 tracking-tighter">notes</h2>
+      <div className="flex flex-col space-y-4">
+        <Link href="/qin" className="flex flex-col space-y-1 group">
+          <span className="text-neutral-900 dark:text-neutral-100 tracking-tight group-hover:underline">
+            locking down a qin f21 pro
+          </span>
+          <span className="text-neutral-600 dark:text-neutral-400">
+            Auditing and hardening a keypad Android phone over ADB, without root.
+          </span>
+        </Link>
       </div>
       <ul className="font-sm mt-8 flex flex-col space-x-0 space-y-2 text-neutral-600 md:flex-row md:space-x-4 md:space-y-0 dark:text-neutral-300">
         <li>

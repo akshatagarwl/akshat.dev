@@ -105,7 +105,7 @@ export default function Page() {
 
         <h2>Keyboards</h2>
         <p>
-          The phone had Gboard, Duoqin Pinyin and a broken stock IME. I tried
+          The phone came with Gboard and Duoqin Pinyin. I tried
           FUTO Keyboard and HeliBoard as touchscreen keyboards and then settled
           on a single keyboard,{' '}
           <a href="https://github.com/sspanak/tt9">Traditional T9</a>
@@ -140,13 +140,13 @@ export default function Page() {
               IR Blaster Remote
             </a>{' '}
             (GPL-3.0, Play) drives the phone&apos;s IR blaster. It requests
-            camera and microphone access to learn codes. Both are left
-            ungranted. I found no analytics SDK in its source, and it uses the
+            camera and microphone access. The microphone is for learning codes
+            from a remote by sound. Both are left ungranted. I found no analytics SDK in its source, and it uses the
             network for GitHub update checks.
           </li>
           <li>
             <a href="https://github.com/beemdevelopment/Aegis">Aegis</a> is
-            installed. Authy stays until every account has been re-enrolled in
+            installed alongside Authy. Authy stays until every account has been re-enrolled in
             Aegis, because Authy has no official export.
           </li>
         </ul>
@@ -181,36 +181,65 @@ export default function Page() {
         </p>
         <ul>
           <li>
-            <code>engineermode</code>: camera, microphone, phone state,
-            approximate location and storage.
+            <code>engineermode</code>: camera, microphone, phone state and
+            approximate location.
           </li>
           <li>
             <code>ygps</code>: approximate location.
           </li>
           <li>
-            <code>loggerui</code>: camera, microphone and storage.
+            <code>loggerui</code>: camera and microphone.
           </li>
         </ul>
         <p>
           A plain per-package <code>appops set</code> was silently dropped for
           several of these. Setting the mode on the app&apos;s own uid (
           <code>appops set --uid</code>) stuck. Precise location (
-          <code>FINE_LOCATION</code>) wouldn&apos;t stick either way. The cost is
-          that the phone&apos;s built-in hardware tests may not work for a repair
-          shop. To undo all of this, run{' '}
-          <code>appops reset</code> on the package, or set each op back to{' '}
-          <code>default</code>.
+          <code>FINE_LOCATION</code>) wouldn&apos;t stick either way, and a
+          storage block only held per package, not on the uid, so I don&apos;t
+          count it. The cost is that the phone&apos;s built-in hardware tests
+          may not work for a repair shop. To undo a block, run{' '}
+          <code>appops set --uid &lt;package&gt; &lt;op&gt; default</code>.
         </p>
 
         <h2>Still to do</h2>
-        <ul>
-          <li>Let PCAPdroid run for two or three days, then export the connections and review them.</li>
-          <li>Move every 2FA account from Authy to Aegis, keep an encrypted backup off the phone, then remove Authy.</li>
-          <li>Set a 6-digit screen PIN and a SIM PIN, and turn on Play Protect and Find My Device.</li>
+        <p>Roughly in order of how much each one helps:</p>
+        <ol>
+          <li>
+            Install firmware updates whenever Duoqin ships them, and check the
+            updater by hand. The 2022 patch level is the real problem: a
+            malicious web page or message can reach years of fixed bugs.
+          </li>
+          <li>
+            Turn off USB debugging and developer options once the audit is
+            done. With ADB on, anyone holding the unlocked phone and a cable
+            gets a shell.
+          </li>
+          <li>
+            Let PCAPdroid run for two or three days, then export the
+            connections and review them. Any Duoqin or unexpected server it
+            finds can be blocked with a DNS blocklist.
+          </li>
+          <li>
+            Move every 2FA account from Authy to Aegis, keep an encrypted
+            backup off the phone, then remove Authy.
+          </li>
+          <li>
+            Use a screen PIN of at least 6 digits, add a SIM PIN, and turn on
+            Play Protect and Find My Device.
+          </li>
+          <li>
+            Take location, camera, microphone and contacts away from Chrome
+            and Google Messages unless they&apos;re needed. Both had them
+            granted by default. Keep location off when not in use.
+          </li>
+          <li>
+            In the Google account, delete the advertising ID and turn off
+            Web &amp; App Activity, Location History and usage &amp;
+            diagnostics.
+          </li>
           <li>Set low UPI limits and turn on transaction alerts.</li>
-          <li>Turn off USB debugging and developer options once the audit is done.</li>
-          <li>Install firmware updates whenever Duoqin ships them. The 2022 patch level is the real problem.</li>
-        </ul>
+        </ol>
 
         <h2>What I didn&apos;t do</h2>
         <p>
