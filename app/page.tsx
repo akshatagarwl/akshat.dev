@@ -9,7 +9,8 @@ const projects = [
   {
     title: 'sigiro',
     url: 'https://github.com/akshatagarwl/sigiro',
-    description: 'OpenTelemetry traces, logs, metrics, and profiles in one place.',
+    description:
+      'OpenTelemetry traces, logs, metrics, and profiles in one place.',
   },
   {
     title: 'otelprofile-go',
@@ -44,13 +45,92 @@ const projects = [
   },
 ];
 
+const links = [
+  {
+    title: 'Neil Postman — Foreword to Amusing Ourselves to Death',
+    url: 'https://www.tau.ac.il/education/muse/maslool/boidem/170foreword.html',
+  },
+  {
+    title: 'Neil Postman — Informing Ourselves to Death',
+    url: 'https://web.archive.org/web/20031029211844/http://www.frostbytes.com/~jimf/informing.html',
+  },
+  {
+    title: "Stop Acting Like You're Famous",
+    url: 'https://ajkprojects.com/stopactinglikeyourefamous',
+  },
+  {
+    title: "Akin's Laws of Spacecraft Design",
+    url: 'https://spacecraft.ssl.umd.edu/akins_laws.html',
+  },
+  {
+    title: 'Why books donʼt work',
+    url: 'https://andymatuschak.org/books/',
+  },
+  {
+    title: 'How can we develop transformative tools for thought?',
+    url: 'https://numinous.productions/ttft/',
+  },
+  {
+    title: 'Speed matters: Why working quickly is more important than it seems',
+    url: 'https://jsomers.net/blog/speed-matters',
+  },
+  {
+    title: 'Patrick Collison — Fast',
+    url: 'https://patrickcollison.com/fast',
+  },
+  {
+    title: "Things That Aren't Doing the Thing",
+    url: 'https://strangestloop.io/essays/things-that-arent-doing-the-thing',
+  },
+  {
+    title: 'Richard Hamming — You and Your Research',
+    url: 'https://d37ugbyn3rpeym.cloudfront.net/stripe-press/TAODSAE_zine_press.pdf',
+  },
+  {
+    title: 'Richard Feynman — Cargo Cult Science',
+    url: 'https://calteches.library.caltech.edu/51/2/CargoCult.htm',
+  },
+  {
+    title: 'Reality has a surprising amount of detail',
+    url: 'http://johnsalvatier.org/blog/2017/reality-has-a-surprising-amount-of-detail',
+  },
+  {
+    title: 'Willingness to look stupid',
+    url: 'https://danluu.com/look-stupid/',
+  },
+  {
+    title: 'The Rise of "Worse is Better"',
+    url: 'https://www.dreamsongs.com/RiseOfWorseIsBetter.html',
+  },
+  {
+    title: 'Teach Yourself Programming in Ten Years',
+    url: 'https://norvig.com/21-days.html',
+  },
+  {
+    title: "Maker's Schedule, Manager's Schedule",
+    url: 'https://paulgraham.com/makersschedule.html',
+  },
+];
+
 export default function Page() {
   return (
     <section>
       <h1 className="font-medium text-2xl mb-8 tracking-tighter">
         hey, I'm akshat 👋
       </h1>
-      <p className="prose prose-neutral dark:prose-invert"></p>
+      <ul className="font-sm mb-12 flex flex-col space-x-0 space-y-2 text-neutral-600 md:flex-row md:space-x-4 md:space-y-0 dark:text-neutral-300">
+        <li>
+          <a
+            className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
+            rel="noopener noreferrer"
+            target="_blank"
+            href="mailto:hey@akshat.dev"
+          >
+            <ArrowIcon />
+            <p className="ml-2 h-7">get in touch</p>
+          </a>
+        </li>
+      </ul>
       <h2 className="font-medium text-xl mb-4 tracking-tighter">projects</h2>
       <div className="flex flex-col space-y-4">
         {projects.map((project) => (
@@ -77,23 +157,33 @@ export default function Page() {
             locking down a qin f21 pro
           </span>
           <span className="text-neutral-600 dark:text-neutral-400">
-            Auditing and hardening a keypad Android phone over ADB, without root.
+            Auditing and hardening a keypad Android phone over ADB, without
+            root.
           </span>
         </Link>
       </div>
-      <ul className="font-sm mt-8 flex flex-col space-x-0 space-y-2 text-neutral-600 md:flex-row md:space-x-4 md:space-y-0 dark:text-neutral-300">
-        <li>
+      <h2
+        id="links"
+        className="font-medium text-xl mt-12 mb-4 tracking-tighter"
+      >
+        links
+      </h2>
+      <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+        Essays I keep coming back to.
+      </p>
+      <div className="flex flex-col space-y-2">
+        {links.map((link) => (
           <a
-            className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
+            key={link.url}
+            className="text-neutral-900 dark:text-neutral-100 tracking-tight hover:underline"
             rel="noopener noreferrer"
             target="_blank"
-            href="mailto:hey@akshat.dev"
+            href={link.url}
           >
-            <ArrowIcon />
-            <p className="ml-2 h-7">get in touch</p>
+            {link.title}
           </a>
-        </li>
-      </ul>
+        ))}
+      </div>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Locking down a Qin F21 Pro',
@@ -10,6 +11,12 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <section>
+      <Link
+        href="/"
+        className="inline-block mb-8 text-neutral-600 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100"
+      >
+        ← akshat
+      </Link>
       <h1 className="font-medium text-2xl mb-8 tracking-tighter">
         locking down a qin f21 pro
       </h1>

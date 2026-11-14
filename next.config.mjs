@@ -21,6 +21,10 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  async redirects() {
+    // The site is a single page now; keep old /links bookmarks working.
+    return [{ source: '/links', destination: '/#links', permanent: true }];
+  },
   async headers() {
     // `/:path*` does not match the root path, which silently left the homepage
     // with no security headers.
