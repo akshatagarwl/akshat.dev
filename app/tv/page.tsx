@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import AgentNoteNotice from '../components/agent-note-notice';
 
 export const metadata: Metadata = {
-  title: 'Making an Android TV less annoying',
+  title: 'Making an Android TV less annoying — agent notes',
   description:
-    'Fixing held-volume repeat and Google voice-search handoff, adding reversible channel filters, and building consent-first phone installers for Android TV.',
+    'Working notes for my coding agents on Android TV remote buttons, voice-search handoff, reversible channel filters and phone installers. Not for human eyes.',
   alternates: { canonical: '/tv' },
 };
 
@@ -20,6 +21,7 @@ export default function Page() {
       <h1 className="font-medium text-2xl mb-8 tracking-tighter">
         making an android tv less annoying
       </h1>
+      <AgentNoteNotice />
       <article className="prose prose-neutral dark:prose-invert">
         <p>
           I wanted a fairly ordinary thing from a Sony Android TV: hold the

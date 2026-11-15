@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import AgentNoteNotice from '../components/agent-note-notice';
 
 export const metadata: Metadata = {
-  title: 'Locking down a Qin F21 Pro',
+  title: 'Locking down a Qin F21 Pro — agent notes',
   description:
-    'Auditing and hardening a Qin F21 Pro keypad phone over ADB, without root.',
+    'Working notes for my coding agents on auditing and hardening a Qin F21 Pro over ADB, without root. Not for human eyes.',
   alternates: { canonical: '/qin' },
 };
 
@@ -20,6 +21,7 @@ export default function Page() {
       <h1 className="font-medium text-2xl mb-8 tracking-tighter">
         locking down a qin f21 pro
       </h1>
+      <AgentNoteNotice />
       <article className="prose prose-neutral dark:prose-invert">
         <p>
           The Qin F21 Pro is a small Android keypad phone made by Duoqin. I

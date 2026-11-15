@@ -118,6 +118,9 @@ export default function Page() {
       <h1 className="font-medium text-2xl mb-8 tracking-tighter">
         hey, I'm akshat 👋
       </h1>
+      <p className="text-neutral-600 dark:text-neutral-400 mb-8">
+        I use this website as a dumping ground for some of my side projects.
+      </p>
       <ul className="font-sm mb-12 flex flex-col space-x-0 space-y-2 text-neutral-600 md:flex-row md:space-x-4 md:space-y-0 dark:text-neutral-300">
         <li>
           <a
@@ -150,7 +153,12 @@ export default function Page() {
           </a>
         ))}
       </div>
-      <h2 className="font-medium text-xl mt-12 mb-4 tracking-tighter">notes</h2>
+      <h2 className="font-medium text-xl mt-12 mb-4 tracking-tighter">
+        agent notes
+      </h2>
+      <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+        Working notes for my coding agents, not for human eyes.
+      </p>
       <div className="flex flex-col space-y-4">
         <Link href="/tv" className="flex flex-col space-y-1 group">
           <span className="text-neutral-900 dark:text-neutral-100 tracking-tight group-hover:underline">
