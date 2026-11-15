@@ -152,6 +152,15 @@ export default function Page() {
       </div>
       <h2 className="font-medium text-xl mt-12 mb-4 tracking-tighter">notes</h2>
       <div className="flex flex-col space-y-4">
+        <Link href="/tv" className="flex flex-col space-y-1 group">
+          <span className="text-neutral-900 dark:text-neutral-100 tracking-tight group-hover:underline">
+            making an android tv less annoying
+          </span>
+          <span className="text-neutral-600 dark:text-neutral-400">
+            Remote buttons, Google voice search, reversible channel filters and
+            consent-first phone installers.
+          </span>
+        </Link>
         <Link href="/qin" className="flex flex-col space-y-1 group">
           <span className="text-neutral-900 dark:text-neutral-100 tracking-tight group-hover:underline">
             locking down a qin f21 pro
