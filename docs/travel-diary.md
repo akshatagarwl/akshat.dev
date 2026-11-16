@@ -1,66 +1,52 @@
-# Travel photo diaries
+# Travel maps
 
-Current direction: **map-first, Three.js, light and quiet**. The map is the main highlight on both the homepage trip preview and the wide trip page. Select photo markers to explore a place and open its photographs; the full readable journal follows below. Optional owner-written notes belong next to the photos. Never invent journeys, dates, diary prose or photographs.
+Current owner direction: **add dates, keep only the map, reuse existing map components**. The earlier custom Three.js map and separate journal have been removed. Never invent journeys, dates, diary prose or photographs.
 
-## Interaction
+## Existing components, not a custom map
 
-- `/travels` collects map-led previews; `/travels/[trip]` opens the large map. The homepage gets a map only once real, reviewed content exists.
-- The map occupies most of the first viewport. A small selected-place card and thumbnail markers lead into the native photo viewer. Full-composition photographs remain below, readable without opening the modal. No sticky panels cover reading/focus on mobile or desktop.
-- Map points are approximate place centres, **not captured GPS locations**. No route is drawn without an actual, owner-approved route. Stop numbers are ordering, not invented travel days.
-- Three.js 0.187.0, official OrbitControls and SVGLoader provide the WebGL scene. D3 only projects geography. Drag to orbit; right-drag to pan. Focus the map: arrows pan and Shift-arrows orbit. Native zoom/fit buttons work with keyboard and touch. Wheel/touch scroll the document; browser pinch zoom is preserved.
-- Raised land is a **cartographic silhouette, not actual terrain/elevation**. No invented mountains or tracks. The camera never automatically flies/rotates. IntersectionObserver can highlight the journal stop, but cannot move the camera.
-- Render only on changes/resize, never in an idle animation loop. Cap pixel ratio at 2. Dispose the renderer/context, controls/key listeners, geometry/materials, ResizeObserver and scheduled frame on unmount or WebGL loss. Losing WebGL restores the SVG and native photo links. Reduced motion stays static until explicit interaction.
-- Photo links progressively enhance into a native modal: previous/next, arrow keys, Escape and native focus return. Without JS they open the image normally. All photographs, places and captions remain readable without JS/Canvas.
-- The first prototype uses a self-hosted SVG Taiwan basemap, not remote tiles, geolocation, account services or map APIs. Other regions need an appropriate basemap before authoring trips there.
+- **react-map-gl 8.1.3** composes MapLibre's Map, Marker, Popup, NavigationControl and ScaleControl. **MapLibre GL 6.18.0** owns rendering, interaction, resource cleanup and reduced-motion behavior. There is no site-built renderer, projection, terrain, orbit controller or animation loop.
+- **Protomaps basemaps 5.7.2** supplies the existing light cartography. Labels are localized to English using upstream English/Latin names; no invented labels. **PMTiles 4.5.0** reads the self-hosted regional archive through its official FileSource.
+- `/travels`, homepage previews and `/travels/[trip]` are map-only. A small map caption shows the month; photo markers and standard library popups show the factual stop date when supplied. Dates without a known day remain month-only. No separate journal, timeline, route, sidebar or fabricated travel-day numbers.
+- Approximate place centres are **not captured GPS**. Do not add a route without an owner-approved source. The photo viewer preserves native dialog modality, arrow navigation, Escape, modified-click image links and focus return.
+- Standard zoom/pan/keyboard controls and fit are available. No wheel zoom, touch pinch interception or automatic camera travel. Cooperative gestures preserve single-finger page scrolling. No appearance preference storage or geolocation.
+- A generic poster rendered by the same map library and a native “Photos and dates” disclosure remain usable without JS or when the archive cannot load. The poster contains no personal pins, photographs or dates.
+- All visitor map resources are same-origin: regional tiles, worker, style, fonts and sprites. No map vendor account, token, remote tile/font request, telemetry or permission prompt. The full archive is fetched once per page/module (about 3.8MB), avoiding a Range-request requirement on assets-only hosting. Source geometry is cached through the existing PMTiles reader; higher zoom overzooms its z9 data rather than fabricating detail.
 
 ## Private local previews
 
-**A prototype is not publication approval.** Real draft records and media stay ignored in `.generated/travel-draft/`. Nothing is pushed or deployed until the owner reviews the content and approves publication.
-
-Prepare a photo without altering its original:
+**A prototype is not publication approval.** Real draft records/media stay ignored in `.generated/travel-draft/`. Nothing is pushed or deployed until the owner reviews the content and approves publication.
 
 ```sh
 node scripts/import-travel-photo.mjs /path/to/photo.jpg your-photo-slug
 ```
 
-This creates 640/1280/1800px WebP copies in `.generated/travel-draft/media/`, bakes orientation into pixels, and removes EXIF/IPTC/XMP. It does **not** remove faces, signs or private information visible in pixels. Review every photograph visually. Original filenames, camera/device metadata, precise coordinates and exact timestamps do not belong in public records.
+Creates 640/1280/1800px WebPs in `.generated/travel-draft/media/`, bakes orientation into pixels, removes EXIF/IPTC/XMP and leaves originals unchanged. This does **not** remove visible faces, signs or private information. Original source filenames, precise GPS, device identity and exact timestamps do not belong in public records. Owner-requested date-only values must remain factual and separately reviewed before publication.
 
-Place draft trip records in `.generated/travel-draft/trips.json`, using the `Trip` shape in `lib/trips.ts`:
+Draft `.generated/travel-draft/trips.json` uses `Trip` in `lib/trips.ts`:
 
-- `id`, `title`, `month` (`YYYY-MM`), `draft: true`, `cover` and ordered `stops`.
-- A photo has `id`, `src`, descriptive `alt`, pixel `width`/`height`, optional factual `caption`.
-- Preview photo `src`: `/travels/preview/<trip-id>/<photo-slug>-1800.webp`.
-- A stop has `id`, `place`, `photos`, optional owner-written `note`, approximate `[longitude, latitude]` and optional `locationNote` for review.
-- The cover must be one of the trip's photographs. Duplicate slugs, remote/traversing paths, malformed months, invalid dimensions or invalid coordinates fail validation.
-
-```sh
-bun run preview:travel
-# http://127.0.0.1:4321/travels
-bun run test:travel-preview
-```
-
-The preview build is explicit (`TRAVEL_PREVIEW=1`), marked noindex and refuses CI. It moves its export to `.generated/travel-export`, **not production `out/`**, and only the explicit local preview server serves that directory. Generated staging copies in `public/travels/preview/` are ignored. `assert-publishable.ts` refuses private or missing production exports. A normal build removes preview staging copies, prepares only approved records and emits no draft routes/media. Do not bypass the publication guard or upload `.generated/` manually.
-
-## Approve a trip
-
-After owner review, move only approved, sanitized derivatives into `public/travels/<trip-id>/`. Add the reviewed record to `data/trips.json` with corresponding non-preview paths and no draft flag. Confirm month, place names, coarse marker positions, captions and visible people/private details. Do not infer an itinerary from gaps between photo timestamps or draw a line that purports to be a recorded route.
-
-`data/trips.json` starts empty. No empty gallery or travel heading is shown. `page.trips.tsx` travel routes are enabled through `pageExtensions` only when approved trips (or an explicit private preview) exist, because Next static export cannot generate a dynamic route with zero parameters. Only approved trips enter the sitemap.
-
-Run `bun run check`, `bun run build`, `bun run test`, and the publication guard. Deployment/pushing master still requires explicit approval.
-
-The earlier abstract roadside diary remains as a legacy fallback for `data/travels.json` and its isolated test fixture; it is not shown alongside the new trip gallery. It does not represent a geographical itinerary.
-
-## Map provenance
-
-Natural Earth 1:50m admin-0 country data is public domain. Source revision: `ca96624a56bd078437bca8184e78163e5039ad19`. The checked-in projected paths are about 27KB, including a wider surrounding coastline so the 3D scene does not show artificial country cutoffs. No global GeoJSON payload reaches the browser.
-
-Regenerate after downloading the pinned source into `.generated/travel-map/countries.geojson`:
+- Trip: `id`, `title`, `month` (`YYYY-MM`), `draft: true`, `cover`, ordered `stops`.
+- Stop: `id`, `place`, `photos`, optional real `date` (`YYYY-MM-DD`), approximate `location: [longitude, latitude]`, optional `locationNote`/owner-written `note` retained as data. The current map-only UI does not invent/display a diary.
+- Photo: `id`, `src`, descriptive `alt`, pixel `width`/`height`, optional factual `caption`.
+- Preview source: `/travels/preview/<trip-id>/<photo-slug>-1800.webp`.
+- Duplicate IDs, remote/traversing image paths, invalid months/calendar dates/dimensions/coordinates and a cover outside the trip fail validation.
 
 ```sh
-mkdir -p .generated/travel-map
-curl --fail --location https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/geojson/ne_50m_admin_0_countries.geojson --output .generated/travel-map/countries.geojson
-bun scripts/render-taiwan-map.ts
+bun run preview:travel       # loopback only, port 4321
+bun run test:travel-preview  # separate port 4323; don't run alongside normal tests/builds
 ```
 
-Projection: pinned D3 geography, ISC notices retained in `public/licenses/d3-*.txt`. Rendering/interaction: pinned Three.js with its official MIT OrbitControls/SVGLoader, notice in `public/licenses/three.txt`. Natural Earth notice: `public/licenses/natural-earth.txt`. Seedbed/Lucide provenance remains intact. Travel photographs are owner-supplied personal content, not relicensed as part of the site's code or the public-domain map data.
+Explicit `TRAVEL_PREVIEW=1` is noindex and refuses CI. Its export moves to `.generated/travel-export`, **never production `out/`**. Staging `public/travels/preview/` is ignored. The publication guard refuses preview/missing production exports. Normal builds remove preview staging and include only approved records. Never bypass the guard or upload `.generated/`.
+
+## Review and publication
+
+Review visible privacy details, exact dates, place names, approximate centres and captions. A gap between photographs is not an itinerary or a route. Move only approved sanitized derivatives to `public/travels/<trip-id>/`, then add reviewed records to `data/trips.json` with non-preview paths and no draft flag.
+
+Approved records initially remain empty; no gallery/heading/travel routes appear in production. `page.trips.tsx` extensions enable only with real approved trips or explicit private previews, avoiding zero-parameter static dynamic routes. Only approved trips enter the sitemap.
+
+Run check, normal build/tests and the publication guard. Deployment/pushing master requires explicit approval. The older abstract roadside fixture remains an isolated legacy fallback, never a simultaneous travel section.
+
+## Provenance and reproduction
+
+See [`public/maps/README.md`](../public/maps/README.md) for the pinned upstream asset source, regional extraction, checksums and licenses. `bun scripts/prepare-map-assets.ts` regenerates the existing localized upstream style, downloads the pinned glyphs/sprites and copies the installed worker. Checked-in map assets make ordinary builds offline with respect to map vendors.
+
+Personal photographs/videos are not licensed as site code or map data. Seedbed/Lucide provenance is unchanged.

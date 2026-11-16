@@ -1,6 +1,6 @@
 # akshat.dev
 
-A light-only personal website: eight projects, photo-led travel diaries, two agent notes and sixteen reading links. No theme selectors or preference storage. Six reading links are shown initially; a native disclosure opens the remaining ten.
+A light-only personal website: eight projects, photo-linked travel maps, two agent notes and sixteen reading links. No theme selectors or preference storage. Six reading links are shown initially; a native disclosure opens the remaining ten.
 
 ## Existing tools, not a custom animation engine
 
@@ -10,11 +10,11 @@ The React adapter supplies eight flower colors, mixed cosmos/daisy/tulip/lavende
 
 Reduced motion, absent Canvas and no JavaScript show local flower images rendered by the same engine. Old saved preferences are ignored; the whole site stays light even when the OS is dark. No preferences are read or stored.
 
-## Travel diaries
+## Travel maps
 
-**Map first:** Three.js 0.187.0 makes a large, orbitable regional map the highlight of both the homepage preview and trip page. Select photo markers, then open the pictures in the existing native viewer. The full photo journal is below the map. Official OrbitControls provide bounded mouse/keyboard orbit/pan; zoom/fit buttons remain native. Wheel/touch gestures scroll normally. Rendering is on demand, with no idle animation loop or automatic camera rides. SVG, no-JS and WebGL-loss fallbacks preserve the places and photographs.
+**Only the map:** reuse **react-map-gl 8.1.3 + MapLibre 6.18.0**, with Protomaps' existing light basemap. No custom Three.js scene, hand-drawn map, separate journal or sidebar. Photo pins and standard popups show factual dates and open the native image viewer. Standard controls provide zoom, pan, keyboard navigation and fit; wheel/one-finger touch still scroll the page. There are no automatic camera rides or site-owned animation loops.
 
-The first local prototype uses Taiwan, a self-hosted public-domain Natural Earth basemap (raised as a stylistic silhouette, not real elevation) and owner-supplied photos. No remote tiles, map accounts, invented routes or diary prose. Photo derivatives are metadata-free, but visible people/private details still need manual review.
+The first local prototype uses Taiwan and owner-supplied photographs. Its 3.8MB regional PMTiles archive, fonts, sprites and worker are self-hosted: no visitor requests to map vendors, tokens or map accounts. A generic map-renderer poster and dated image links work without JS/map loading. No invented routes, dates or diary prose. Metadata-free derivatives still need manual review for visible people/private details.
 
 Approved records go in initially empty `data/trips.json`. Until then, the gallery and travel routes are absent from production. Private drafts/media stay ignored and export only to `.generated/travel-export`, never production `out/`. See [`docs/travel-diary.md`](docs/travel-diary.md) for the local preview and review/publication workflow. The older abstract roadside diary remains a tested legacy fallback.
 
@@ -44,7 +44,7 @@ Flowers stay in the empty home scene and desktop margins, not over text. Notes r
 
 No account API, analytics, remote fonts, tokens or permission prompts. Do not publish credentials, device identifiers, account profiles, signing keys, personal channel lists or private exceptions. Seedbed's account/store/API/telemetry code is not included.
 
-See [`docs/verification.md`](docs/verification.md) for checks and limitations. Code is MIT; third-party and font licenses are in `public/licenses/`. Personal travel photographs/videos are not covered by the code license. Natural Earth map data is public domain.
+See [`docs/verification.md`](docs/verification.md) for checks and limitations. Code is MIT; third-party and font licenses are in `public/licenses/`. Personal travel photographs/videos are not covered by the code license. OpenStreetMap-derived map data is ODbL; Protomaps/MapLibre notices and provenance are in `public/maps/README.md` and `public/licenses/`.
 
 ## Deployment
 

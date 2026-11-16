@@ -1,5 +1,5 @@
 export type TripPhoto = { id: string; src: string; alt: string; width: number; height: number; caption?: string };
-export type TripStop = { id: string; place: string; location?: [number, number]; locationNote?: string; note?: string; photos: TripPhoto[] };
+export type TripStop = { id: string; place: string; date?: string; location?: [number, number]; locationNote?: string; note?: string; photos: TripPhoto[] };
 export type Trip = { id: string; title: string; month: string; cover: TripPhoto; stops: TripStop[]; draft?: boolean };
 
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -25,17 +25,22 @@ export function parseTrips(value: unknown): Trip[] {
     const parsedStops = trip.stops.map((stop): TripStop => {
       if (!object(stop) || !slug(stop.id) || stops.has(stop.id) || !text(stop.place) || !Array.isArray(stop.photos) || !stop.photos.length) throw new Error('Stops need unique slugs, a place and photos.');
       if (stop.location !== undefined && (!Array.isArray(stop.location) || stop.location.length !== 2 || !stop.location.every(n => typeof n === 'number' && Number.isFinite(n)) || Math.abs(stop.location[0]) > 180 || Math.abs(stop.location[1]) >= 85)) throw new Error('Locations must be finite longitude/latitude pairs within Mercator bounds.');
+      if (stop.date !== undefined && (!text(stop.date) || !/^\d{4}-\d{2}-\d{2}$/.test(stop.date) || !Number.isFinite(Date.parse(`${stop.date}T00:00:00Z`)) || new Date(`${stop.date}T00:00:00Z`).toISOString().slice(0, 10) !== stop.date)) throw new Error('Stop dates must be real YYYY-MM-DD dates.');
       for (const key of ['note', 'locationNote']) if (stop[key] !== undefined && !text(stop[key])) throw new Error('Stop notes must be nonempty.');
       const parsed = stop.photos.map(photo);
       for (const p of parsed) { if (photos.has(p.id)) throw new Error('Photo ids must be unique within a trip.'); photos.add(p.id); }
       stops.add(stop.id);
-      return { id: stop.id, place: stop.place, photos: parsed, location: stop.location as [number, number] | undefined, locationNote: stop.locationNote as string | undefined, note: stop.note as string | undefined };
+      return { id: stop.id, place: stop.place, date: stop.date as string | undefined, photos: parsed, location: stop.location as [number, number] | undefined, locationNote: stop.locationNote as string | undefined, note: stop.note as string | undefined };
     });
     const cover = photo(trip.cover);
     if (!parsedStops.some(s => s.photos.some(p => p.id === cover.id && p.src === cover.src))) throw new Error('The cover must be a photograph in the trip.');
     ids.add(trip.id);
     return { id: trip.id, title: trip.title, month: trip.month, cover, stops: parsedStops, draft: trip.draft as boolean | undefined };
   }).sort((a, b) => b.month.localeCompare(a.month));
+}
+
+export function tripDate(date: string) {
+  return new Intl.DateTimeFormat('en-GB', date.length === 10 ? { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' } : { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${date.length === 7 ? date + '-01' : date}T00:00:00Z`));
 }
 
 export function photoSrcSet(photo: TripPhoto) {

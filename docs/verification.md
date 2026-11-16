@@ -1,36 +1,34 @@
-# Local verification — map-first Three.js prototype, 2026-11-16
+# Local verification — map-only existing components, 2026-11-16
 
-This prototype has **not been pushed or deployed**. Production is unchanged. No TV/phone contact, account API, Photos-library modification or permission grant. Owner-supplied originals were read, not changed.
+**Not pushed or deployed. Production is unchanged.** No TV/phone contact, account API, permission grant or modification of owner-supplied originals.
 
 ## Checks
 
-- Frozen dependency install, production dependency audit, content/route type generation and TypeScript.
-- Normal production build, Seedbed/legacy diary/trip validation tests and **28 original desktop/mobile Chromium browser tests**.
-- **26 private-preview desktop/mobile Chromium tests**, including actual Three.js rendering and interactive camera controls, rather than a mocked map.
-- A normal build with local private drafts present still excludes their records, travel routes and preview media. Private builds stay outside production `out/`; the publication guard rejects them.
+- Frozen dependency install, content/route type generation, TypeScript, production build, Seedbed/legacy fixture/trip validation tests, including real date-only calendar validation.
+- **28 original desktop/mobile Chromium tests** preserve all existing projects, reading links, notes, flowers, metadata, redirects, headers and 404 behavior.
+- **24 private-preview desktop/mobile Chromium tests** exercise actual MapLibre rendering, standard controls/popups, factual date labels, keyboard pan, fit, native wheel and one-finger touch scrolling, image navigation and the native modal.
+- Production dependency audit: no reported vulnerabilities. Normal publication guard passes; private exports are refused.
 
-## Map-first experience
+## Map only, no custom map engine
 
-Both the homepage trip preview and wide trip page lead with the map, not a photo cover or a diary/sidebar layout. The trip map takes more than half the viewport; the full photo journal follows below it. Three.js 0.187.0 renders the Natural Earth silhouette, surrounding coast, sea and photo pins. Raised land is a cartographic style, **not measured elevation or invented mountains**.
+The custom Three.js/SVG map and separate journal have been removed. Homepage/travel previews and trip pages use maintained **react-map-gl + MapLibre** Map/Marker/Popup/NavigationControl/ScaleControl components and **Protomaps light** cartography. Dates appear on pins and standard popups; unknown days remain month-only. Approximate place centres are not captured GPS or recorded routes. No invented dates, itinerary, prose, terrain, footage or route.
 
-Verified: mouse orbit, keyboard orbit/pan, bounded zoom and fit, marker selection without leaving the map, selected-place photo opening and native modal focus return. Wheel and CDP-emulated touch gestures over the real canvas scroll the document rather than hijacking it. Photo-journal reading can update the selected place without moving the camera. There are no automatic camera rides or motion-dependent reading features.
+The large map occupies more than half the viewport. Map/image links preserve modified clicks. Native modal previous/next, arrow keys, Escape and focus return work, including a navigation button becoming disabled at an end. Missing dialog support preserves ordinary image navigation.
 
-The renderer sleeps when idle: its render counter remains unchanged after settling. It schedules frames only for interactions/resize, caps pixel ratio at 2 and disposes controls/listeners, geometry/materials, observers and the WebGL context. A test deliberately loses the actual context and verifies canvas removal, disabled unavailable controls, visible SVG fallback and working native place links.
+No-JS keeps the generic map poster and dated native image links. An aborted archive request and deliberately lost **real WebGL context** each restore the poster; the lost canvas is removed. There is no site-owned render loop or camera controller. The maintained library owns rendering and lifecycle; no automatic camera rides.
 
-No-JS pages retain the map, place links and complete photographs. Unsupported native dialogs retain ordinary image links. Modified clicks open new tabs normally. The photo viewer supports previous/next, arrow keys, Escape, inert background and focus return, including when a navigation button becomes disabled at an end.
-
-Gallery, diary and open modal pass automated WCAG A/AA/2.2 scans. No horizontal overflow at 320, 390, 768 or 1440 CSS pixels. Desktop/mobile screenshots are generated under ignored `test-results/`; representative views reviewed. No off-origin requests or browser page errors.
+Standard controls and popup/modal UI pass automated WCAG A/AA/2.2 scans in local Chromium. No horizontal overflow at 320, 390, 768 or 1440 CSS pixels. No off-origin visitor requests, failed resources or page errors in the normal map flow. High-DPR emulation loads local retina sprites using canonical encoded URLs, avoiding static-host redirects.
 
 ## Privacy and provenance
 
-Real draft records/media stay ignored in `.generated/travel-draft/`. Only explicit local previews stage derivatives under ignored `public/travels/preview/`, mark the pages noindex, refuse CI and isolate the export in `.generated/travel-export`. Production `out/` is absent after a preview build. The server binds only to loopback.
+All map resources are same-origin: regional 3.8MB PMTiles archive, existing style, glyphs, sprites and standalone module worker. The official PMTiles FileSource supports assets-only hosting without HTTP Range requests. There are no map tokens, accounts, remote tiles/fonts, geolocation or permission prompts. Licenses include BSD/MIT, Noto OFL, OpenStreetMap ODbL and ESA WorldCover CC BY 4.0. Visible attribution and full source/license details are retained in `public/maps/README.md` and `public/licenses/`.
 
-Six 640/1280/1800px photo derivatives pass metadata checks: no EXIF, IPTC or XMP, including captured GPS, device identity and exact timestamps. This does not remove visible bystanders/private details. Owner visual review/publication approval are still required. Derived monthly dates and approximate place markers are not a recorded route; one metadata-derived place name remains provisional. No diary prose, footage or full itinerary has been invented.
+The generic map poster was visually reviewed: no personal pins, photographs or dates. Personal travel images are not licensed as site code or map data.
 
-Approved `data/trips.json` is empty. Only approved records enter production/sitemap. Three.js's MIT notice is retained; D3 projection and legacy ISC notices remain. Natural Earth is public domain, with pinned source provenance and a reproducible local projection script. Personal photographs are not covered by the code license.
+Real drafts/media stay ignored. Explicit private previews are noindex, refuse CI, bind to loopback and export only to `.generated/travel-export`; production `out/` is absent. Normal builds omit private routes/records/media even when local drafts exist. Approved `data/trips.json` remains empty. Publication requires owner review and explicit approval.
 
-## Preserved behavior and limits
+All six photo derivatives remain free of EXIF/IPTC/XMP. Visible bystanders/private details still require manual review. Requested date-only values were read from owner-supplied originals; full timestamps, captured GPS, source filenames and camera/device metadata are not exported. One coarse place name remains provisional.
 
-Eight projects, two complete agent notes, sixteen reading links (ten under native disclosure), `/tv`, `/qin`, `/links → /#links`, canonical/sitemap/robots, security headers and real 404s remain tested. Plain wordmark/links, light-only appearance and all flower fallbacks remain. No analytics, remote fonts, remote tiles, appearance selectors or preference storage.
+## Limits
 
-Not verified: physical phones, Safari/WebKit, screen-reader user testing, GPU/battery cost, universal frame rates, production rollout or Lighthouse. The video original is still unavailable locally and is not represented as playable content. Local Chromium screenshots/tests are not a claim of physical-device or production verification.
+No physical phone, Safari/WebKit, screen-reader user testing, GPU/battery profiling, universal frame-rate guarantee, Lighthouse or production rollout verification. Mobile checks are Chromium device emulation, not physical iOS. The video original is still unavailable and is not represented as playable content.

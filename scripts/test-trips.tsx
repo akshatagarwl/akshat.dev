@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { parseTrips, photoSrcSet } from '../lib/trips';
+import { parseTrips, photoSrcSet, tripDate } from '../lib/trips';
 import { TravelGallery } from '../components/TravelGallery';
 
 const image = { id: 'sample', src: '/travels/fixture/sample-1800.webp', alt: 'Clearly labelled test photograph.', width: 1800, height: 1800 };
@@ -10,6 +10,10 @@ const parse = (value: unknown) => parseTrips([value]);
 assert.deepEqual(parseTrips([]), []);
 assert.equal(renderToStaticMarkup(<TravelGallery trips={[]} />), '');
 assert.equal(parse(valid)[0].title, valid.title);
+assert.equal(parse({ ...valid, stops: [{ ...valid.stops[0], date: '2025-06-17' }] })[0].stops[0].date, '2025-06-17');
+for (const date of ['2025-02-29', '2026-02-31', '2026-13-01', 'tomorrow', '2026-10-20T12:30:00Z']) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], date }] }));
+assert.equal(tripDate('2026-10-17'), '17 Oct 2026');
+assert.equal(tripDate('2026-10'), 'Oct 2026');
 for (const value of [null, {}, { ...valid, id: '../oops' }, { ...valid, month: '2025-99' }, { ...valid, stops: [] }, { ...valid, cover: { ...image, id: 'not-in-trip' } }, { ...valid, draft: 'true' }]) assert.throws(() => parse(value));
 for (const location of [[181, 23], [121, 85], [NaN, 23], [121], ['121', 23]]) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], location }] }));
 for (const src of ['https://example.com/a.webp', '/travels/../private.webp', '/travels/a/a.webp?gps=1']) assert.throws(() => parse({ ...valid, cover: { ...image, src } }));
@@ -20,4 +24,4 @@ assert.match(photoSrcSet(image)!, /sample-640.webp 640w/);
 const html = renderToStaticMarkup(<TravelGallery trips={parse(valid)} />);
 assert.ok(html.includes('&lt;script&gt;') && !html.includes('<script>'));
 assert.ok(html.includes('/travels/fixture'));
-console.log('Trip checks pass: validation, local media, bounds, empty gallery, escaping and responsive photos.');
+console.log('Trip checks pass: validation, local media, bounds, empty gallery, escaping, responsive photos and real date-only values.');
