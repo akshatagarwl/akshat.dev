@@ -22,13 +22,21 @@
 .map-photo-marker { display: flex; gap: 8px; align-items: center; border: 1px solid #a4b198; border-radius: 5px; padding: 5px 10px 5px 5px; background: #fffdf8; color: #35442d; box-shadow: 0 3px 10px #283b2b20; cursor: pointer; font: 12px/1.4 'DM Sans Variable', sans-serif; text-align: left; }
 .map-photo-marker[aria-pressed='true'] { border-color: #91422d; }
 .map-photo-marker img { width: 36px; height: 36px; object-fit: cover; border-radius: 2px; }
+.map-photo-marker > span { max-width: 80px; }
+.map-cluster-marker { width: 54px; height: 54px; border-radius: 50%; border: 1px solid #a4b198; background: #fffdf8; color: #35442d; cursor: pointer; box-shadow: 0 3px 10px #283b2b20; font: 17px/1.1 'DM Sans Variable', sans-serif; }
+.map-cluster-choices { display: grid; gap: 8px; max-height: 240px; overflow: auto; }
+.map-cluster-choices button { background: #fffdf8; border: 1px solid #bac9b5; border-radius: 4px; padding: 8px; color: #35442d; text-align: left; cursor: pointer; }
+.map-cluster-choices time { display: block; font-size: 10px; margin-top: 4px; }
+.map-cluster-marker span { display: block; font-size: 9px; margin-top: 2px; }
+.map-photo-popup { max-height: min(280px, calc((100svh - 240px) * .4)); overflow: auto; }
+.video-original { display: inline-block; margin-top: 8px; color: #35442d; font-size: 10px; }
 .map-photo-marker time { display: block; font: 9px/1.5 'IBM Plex Mono', monospace; color: #59654f; margin-top: 2px; }
 .map-photo-popup h2 { margin: 0 0 4px; font: 28px/1.2 'Newsreader Variable', Georgia, serif; }
 .map-photo-popup time { font: 11px/1.5 'IBM Plex Mono', monospace; color: #4c5d42; }
 .map-photo-popup a { display: block; margin-top: 12px; }
 .map-photo-popup img { display: block; width: 100%; height: auto; max-height: 230px; object-fit: contain; }
 .map-location-note { font-size: 11px; line-height: 1.5; color: #4c5d42; margin: 8px 0 0; }
-.map-fit { position: absolute; top: 88px; right: 10px; z-index: 1; border: 1px solid #b9c4b1; border-radius: 4px; background: #fffdf8; color: #35442d; padding: 7px 9px; cursor: pointer; font-size: 11px; }
+.map-fit { position: absolute; bottom: 48px; right: 10px; z-index: 1; border: 1px solid #b9c4b1; border-radius: 4px; background: #fffdf8; color: #35442d; padding: 7px 9px; cursor: pointer; font-size: 11px; }
 .maplibregl-popup { z-index: 3; }
 .maplibregl-popup-content { border-radius: 5px; background: #fffdf8; padding: 18px 16px 14px; }
 .maplibregl-popup-close-button { min-width: 32px; min-height: 32px; font-size: 22px; padding: 4px 8px; color: #35442d; }

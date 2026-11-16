@@ -6,6 +6,22 @@ import { videoPosition } from '../lib/trips';
 import { spawnSync } from 'node:child_process';
 
 const trip = '/travels/taiwan';
+const draft = JSON.parse(readFileSync('.generated/travel-draft/trips.json', 'utf8'))[0];
+const mediaCount = draft.stops.reduce((count: number, stop: { photos: unknown[]; videos?: unknown[] }) => count + stop.photos.length + (stop.videos?.length ?? 0), 0);
+const reveal = async (page: import('@playwright/test').Page, place: string) => {
+  const marker = page.getByRole('button', { name: new RegExp(`^Explore ${place},`) });
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const cluster = page.getByRole('button', { name: new RegExp(`^Choose places:.*${place}`) });
+    await expect.poll(async () => await marker.isVisible() || await cluster.isVisible()).toBe(true);
+    if (await marker.isVisible()) return marker;
+    await cluster.click();
+    await page.getByRole('button', { name: new RegExp(`^Choose ${place}`) }).click();
+    await page.locator('.maplibregl-popup-close-button').click();
+    await expect(marker).toBeVisible();
+  }
+  await expect(marker).toBeVisible();
+  return marker;
+};
 const ready = async (page: import('@playwright/test').Page) => {
   await page.goto(trip);
   await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
@@ -22,7 +38,8 @@ test('maintained MapLibre component is the only travel surface and dates are vis
   await expect(page.locator('.maplibregl-canvas')).toBeVisible();
   await expect(page.locator('.trip-pages, .trip-stop, .trip-masthead, .map-geography')).toHaveCount(0);
   await expect(page.locator('.map-caption > time')).toHaveText('Oct 2026');
-  await expect(page.locator('.map-photo-marker time')).toHaveText(['17 Oct 2026', '20 Oct 2026', '15 Oct 2026']);
+  await expect(page.locator('.map-cluster-marker')).not.toHaveCount(0);
+  await expect(page.locator('.map-cluster-marker').first()).toHaveAccessibleName(/Oct 2026/);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   expect((await page.locator('.trip-map-stage').boundingBox())!.height).toBeGreaterThan(page.viewportSize()!.height / 2);
   expect(external).toEqual([]); expect(errors).toEqual([]); expect(failures).toEqual([]);
@@ -30,14 +47,14 @@ test('maintained MapLibre component is the only travel surface and dates are vis
 
 test('native map controls zoom, fit and keyboard pan; wheel still scrolls the page', async ({ page }) => {
   await ready(page);
-  const marker = page.locator('.maplibregl-marker').first();
-  const start = await marker.getAttribute('style');
+  const camera = page.locator('.maplibregl-canvas');
+  const start = await camera.getAttribute('data-camera');
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
-  await expect(marker).not.toHaveAttribute('style', start!);
+  await expect(camera).not.toHaveAttribute('data-camera', start!);
   await page.getByRole('button', { name: 'Fit Taiwan' }).click();
-  await expect(marker).toHaveAttribute('style', start!);
-  await page.locator('.maplibregl-canvas').focus(); await page.keyboard.press('ArrowRight');
-  await expect(marker).not.toHaveAttribute('style', start!);
+  await expect(camera).toHaveAttribute('data-camera', start!);
+  await camera.focus(); await page.keyboard.press('ArrowRight');
+  await expect(camera).not.toHaveAttribute('data-camera', start!);
   await page.getByRole('button', { name: 'Fit Taiwan' }).click();
   await page.locator('.maplibregl-canvas').hover();
   const before = await page.evaluate(() => scrollY);
@@ -62,13 +79,13 @@ test('one-finger touch over the standard map scrolls the page', async ({ browser
 
 test('standard popups show the actual photo date and open the native viewer', async ({ page }) => {
   await ready(page);
-  await page.getByRole('button', { name: 'Explore Jiufen, 20 Oct 2026', exact: true }).click();
+  await (await reveal(page, 'Jiufen')).click();
   const popup = page.locator('.maplibregl-popup');
   await expect(popup.getByRole('heading')).toHaveText('Jiufen');
   await expect(popup.locator('time')).toHaveText('20 Oct 2026');
   const link = popup.getByRole('link', { name: /^Open photo:/ });
   const [tab] = await Promise.all([page.context().waitForEvent('page'), link.click({ modifiers: ['ControlOrMeta'] })]);
-  await expect(tab).toHaveURL(/jiufen-1800\.webp$/); await tab.close();
+  await expect(tab).toHaveURL(/jiufen-original\.webp$/); await tab.close();
   await link.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -78,7 +95,7 @@ test('standard popups show the actual photo date and open the native viewer', as
   await expect(dialog.getByRole('heading')).toHaveText('Hualien area');
   await expect(dialog.locator('time')).toHaveText('17 Oct 2026');
   await dialog.getByRole('button', { name: 'next' }).click();
-  await expect(dialog.getByRole('button', { name: 'close' })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'next' })).toBeFocused();
   const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   expect(audit.violations, JSON.stringify(audit.violations, null, 2)).toEqual([]);
   await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible(); await expect(link).toBeFocused();
@@ -90,9 +107,10 @@ test('no JavaScript keeps the real map poster and dated native image links', asy
   await expect(page.locator('.map-poster')).toBeVisible();
   await expect.poll(() => page.locator('.map-poster').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(500);
   await page.getByText('Media and dates', { exact: true }).click();
-  await expect(page.locator('.map-static-photos time')).toHaveText(['17 Oct 2026', '20 Oct 2026', '15 Oct 2026']);
-  await expect(page.locator('.map-static-photos a').last()).toHaveAttribute('href', /coast-ride-hq\.mp4$/);
-  await page.locator('.map-static-photos a').nth(1).click(); await expect(page).toHaveURL(/jiufen-1800\.webp$/);
+  await expect(page.locator('.map-static-photos a')).toHaveCount(mediaCount);
+  await expect(page.locator('.map-static-photos time')).not.toHaveCount(0);
+  await page.locator('.map-static-photos a[href$="jiufen-original.webp"]').click();
+  await expect(page).toHaveURL(/jiufen-original\.webp$/);
   await context.close();
 });
 
@@ -103,7 +121,7 @@ test('missing basemap falls back to the existing-renderer poster, not custom geo
   await expect(page.locator('.map-poster')).toBeVisible();
   await expect(page.locator('.maplibregl-canvas')).toHaveCount(0);
   await page.getByText('Media and dates', { exact: true }).click();
-  await expect(page.locator('.map-static-photos a')).toHaveCount(3);
+  await expect(page.locator('.map-static-photos a')).toHaveCount(mediaCount);
 });
 
 test('real WebGL context loss returns to the generic poster and native photo links', async ({ page }) => {
@@ -122,14 +140,14 @@ test('real WebGL context loss returns to the generic poster and native photo lin
 test('unsupported dialog API preserves ordinary image navigation', async ({ page }) => {
   await page.addInitScript(() => { Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { value: undefined, configurable: true }); });
   await ready(page);
-  await page.getByRole('button', { name: 'Explore Jiufen, 20 Oct 2026', exact: true }).click();
+  await (await reveal(page, 'Jiufen')).click();
   await page.locator('.map-photo-popup a').click();
-  await expect(page).toHaveURL(/jiufen-1800\.webp$/);
+  await expect(page).toHaveURL(/jiufen-original\.webp$/);
 });
 
 test('reduced motion leaves reading and map/photo selection usable', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' }); await ready(page);
-  await page.getByRole('button', { name: 'Explore Jiufen, 20 Oct 2026', exact: true }).click();
+  await (await reveal(page, 'Jiufen')).click();
   await expect(page.locator('.map-photo-popup time')).toHaveText('20 Oct 2026');
   await expect(page.locator('.trip-map')).not.toHaveCSS('position', 'sticky');
 });
@@ -153,8 +171,11 @@ test('video is click-to-play, decodes real frames, and stops on close', async ({
   const requests: string[] = [];
   page.on('request', request => { if (request.url().endsWith('.mp4')) requests.push(request.url()); });
   await ready(page);
-  const cameraReference = page.locator('[data-stop-id="jiufen"]').locator('..'), originalView = await cameraReference.getAttribute('style');
-  await page.getByRole('button', { name: 'Explore Bawengweng Bikeway, 15 Oct 2026', exact: true }).click();
+  const stopMarker = await reveal(page, 'Bawengweng Bikeway');
+  const cameraReference = page.locator('.maplibregl-canvas');
+  await stopMarker.click();
+  await expect(cameraReference).toHaveAttribute('data-camera', /,160,0,0,0\]$/);
+  const originalView = await cameraReference.getAttribute('data-camera');
   await expect(page.locator('.map-video-link')).toContainText('Play video · 2:54');
   expect(requests).toEqual([]);
   const link = page.getByRole('link', { name: /^Play video:/ });
@@ -175,7 +196,7 @@ test('video is click-to-play, decodes real frames, and stops on close', async ({
   await expect(page.locator('video')).toHaveCount(0);
   expect(await handle!.evaluate(v => (v as HTMLVideoElement).paused)).toBe(true);
   await expect(page.getByRole('button', { name: 'Explore Bawengweng Bikeway, 15 Oct 2026', exact: true })).toBeFocused();
-  await expect(cameraReference).toHaveAttribute('style', originalView!);
+  await expect(cameraReference).toHaveAttribute('data-camera', originalView!);
 });
 
 test('high-quality video preserves frame rate and strips embedded sensitive metadata', async () => {
@@ -196,27 +217,60 @@ test('high-quality video preserves frame rate and strips embedded sensitive meta
 test('recorded GPS follows playback and seeking without moving the camera or requesting geolocation', async ({ page }) => {
   await page.addInitScript(() => { navigator.geolocation.getCurrentPosition = () => { throw new Error('Current location must never be requested.'); }; navigator.geolocation.watchPosition = () => { throw new Error('Current location must never be requested.'); }; });
   await ready(page);
-  await page.getByRole('button', { name: 'Explore Bawengweng Bikeway, 15 Oct 2026', exact: true }).click();
+  await (await reveal(page, 'Bawengweng Bikeway')).click();
   await page.getByRole('link', { name: /^Play video:/ }).click();
   const marker = page.locator('.video-position-marker'), video = page.locator('video');
   const draft = JSON.parse(readFileSync('.generated/travel-draft/trips.json', 'utf8'));
   const track = draft[0].stops.find((s: { id: string }) => s.id === 'east-coast').videos[0].track;
   await expect(marker).toBeVisible();
-  const initialDot = (await marker.boundingBox())!, initialPanel = (await page.locator('.video-viewer').boundingBox())!;
-  expect(initialDot.y + initialDot.height <= initialPanel.y || initialDot.x >= initialPanel.x + initialPanel.width).toBe(true);
+  await expect.poll(async () => {
+    const dot = (await marker.boundingBox())!, panel = (await page.locator('.video-viewer').boundingBox())!;
+    return dot.y + dot.height <= panel.y || dot.x >= panel.x + panel.width;
+  }).toBe(true);
   const first = await marker.getAttribute('data-latitude');
-  const cameraReference = page.locator('[data-stop-id="jiufen"]').locator('..');
-  const before = await cameraReference.getAttribute('style');
+  const cameraReference = page.locator('.maplibregl-canvas');
+  const before = await cameraReference.getAttribute('data-camera');
   await video.evaluate(async element => { const v = element as HTMLVideoElement; v.muted = true; await v.play(); v.pause(); v.currentTime = 90; });
   await expect.poll(async () => Number(await marker.getAttribute('data-latitude'))).toBeCloseTo(videoPosition(track, 90)![1], 6);
   await expect(marker).not.toHaveAttribute('data-latitude', first!);
-  await expect(cameraReference).toHaveAttribute('style', before!);
+  await expect(cameraReference).toHaveAttribute('data-camera', before!);
   const dot = (await marker.boundingBox())!, panel = (await page.locator('.video-viewer').boundingBox())!;
   expect(dot.y + dot.height <= panel.y || dot.x >= panel.x + panel.width).toBe(true);
   expect(await video.evaluate(v => (v as HTMLVideoElement).paused)).toBe(true);
   await expect(page.locator('.video-position-status')).toHaveText('Recorded GPS · follows playback');
   await page.locator('.video-viewer').getByRole('button', { name: 'close' }).click();
   await expect(marker).toHaveCount(0);
+});
+
+test('every compatible clip decodes and full-resolution photos have no private metadata', async ({ page, request }) => {
+  test.setTimeout(90_000);
+  await ready(page);
+  for (const stop of draft.stops) {
+    for (const photo of stop.photos) {
+      const response = await request.get(photo.original.src);
+      expect(response.ok()).toBe(true);
+      const metadata = await sharp(await response.body()).metadata();
+      expect(metadata.width).toBe(photo.original.width);
+      expect(metadata.height).toBe(photo.original.height);
+      expect(metadata.exif).toBeUndefined();
+      expect(metadata.xmp).toBeUndefined();
+      expect(metadata.iptc).toBeUndefined();
+    }
+    for (const clip of stop.videos ?? []) {
+      await ready(page);
+      await (await reveal(page, stop.place)).click();
+      await page.getByRole('link', { name: /^Play video:/ }).click();
+      const video = page.locator('video');
+      await video.evaluate(async element => {
+        const player = element as HTMLVideoElement;
+        player.muted = true;
+        await player.play();
+      });
+      await expect.poll(() => video.evaluate(element => (element as HTMLVideoElement).getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(0);
+      await page.screenshot({ path: `.generated/travel-draft/verify/video-${clip.id}-${test.info().project.name}.png` });
+      await page.locator('.video-viewer').getByRole('button', { name: 'close' }).click();
+    }
+  }
 });
 
 test('large private videos stream byte ranges and retain the same-origin privacy headers', async ({ request }) => {
@@ -237,8 +291,10 @@ test('map and popup UI remain accessible and fit narrow screens', async ({ page 
     await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
+      await page.goto(path);
+      await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.getByRole('button', { name: 'Explore Jiufen, 20 Oct 2026', exact: true }).click();
+      await (await reveal(page, 'Jiufen')).click();
       await expect.poll(async () => {
         const stage = (await page.locator('.trip-map-stage').boundingBox())!, popup = (await page.locator('.maplibregl-popup').boundingBox())!;
         return popup.x >= stage.x - 1 && popup.x + popup.width <= stage.x + stage.width + 1 && popup.y >= stage.y - 1 && popup.y + popup.height <= stage.y + stage.height + 1;
@@ -246,9 +302,9 @@ test('map and popup UI remain accessible and fit narrow screens', async ({ page 
       await page.locator('.maplibregl-popup-close-button').click();
     }
     await page.setViewportSize(info.project.name === 'mobile' ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
-    await page.getByRole('button', { name: 'Explore Jiufen, 20 Oct 2026', exact: true }).click();
+    await (await reveal(page, 'Jiufen')).click();
     const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     expect(audit.violations, JSON.stringify(audit.violations, null, 2)).toEqual([]);
-    if (path === trip) await page.screenshot({ path: `test-results/map-only-${info.project.name}.jpg`, fullPage: true });
+    if (path === trip) await page.screenshot({ path: `.generated/travel-draft/verify/map-only-${info.project.name}.jpg`, fullPage: true });
   }
 });
