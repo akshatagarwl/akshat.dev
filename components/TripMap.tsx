@@ -18,7 +18,7 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
   const [clip, setClip] = useState<{ video: TripVideo; place: string; date: string; stopId: string } | null>(null);
   const [playbackTime, setPlaybackTime] = useState(0);
   const closeVideo = () => {
-    player.current?.pause(); player.current?.removeAttribute('src'); player.current?.load();
+    player.current?.pause(); player.current?.removeAttribute('src'); player.current?.querySelectorAll('source').forEach(source => source.removeAttribute('src')); player.current?.load();
     returnStop.current = clip?.stopId ?? null; setClip(null); setPlaybackTime(0);
   };
   const [visible, setVisible] = useState(false), [ready, setReady] = useState(false), [failed, setFailed] = useState(false);
@@ -46,12 +46,12 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
     <div className="trip-map-stage">
       <div className="map-static" hidden={ready && !failed}>
         <img className="map-poster" src="/maps/taiwan-overview.webp" alt="OpenStreetMap basemap of Taiwan and its surrounding coast." width="1200" height="800" />
-        <details className="map-static-photos"><summary>Media and dates</summary>{photos.map(({ photo, place, date }) => <a key={photo.id} href={photo.src}>{place} · <time dateTime={date}>{tripDate(date)}</time></a>)}{trip.stops.flatMap(stop => stop.videos?.map(video => <a key={video.id} href={video.src}>{stop.place} · <time dateTime={stop.date ?? trip.month}>{tripDate(stop.date ?? trip.month)}</time> · video</a>) ?? [])}</details>
+        <details className="map-static-photos"><summary>Media and dates</summary>{photos.map(({ photo, place, date }) => <a key={photo.id} href={photo.original?.src ?? photo.src}>{place} · <time dateTime={date}>{tripDate(date)}</time></a>)}{trip.stops.flatMap(stop => stop.videos?.map(video => <a key={video.id} href={video.original?.src ?? video.src}>{stop.place} · <time dateTime={stop.date ?? trip.month}>{tripDate(stop.date ?? trip.month)}</time> · video</a>) ?? [])}</details>
         <small className="map-static-credit"><a href="https://protomaps.com">Protomaps</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://esa-worldcover.org/en/data-access">ESA WorldCover</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)</small>
       </div>
       {visible && !failed && <MapBoundary onFailure={onMapFailure}><MapLibreTripMap trip={trip} activeVideo={clip?.video} playbackTime={playbackTime} onReady={onMapReady} onFailure={onMapFailure} onPhoto={photo => {
         player.current?.pause();
-        if (typeof viewer.current?.showModal !== 'function') { location.assign(photo.src); return; }
+        if (typeof viewer.current?.showModal !== 'function') { location.assign(photo.original?.src ?? photo.src); return; }
         setIndex(photos.findIndex(p => p.photo.id === photo.id));
       }} onVideo={video => {
         const stop = trip.stops.find(s => s.videos?.some(v => v.id === video.id))!;
@@ -60,10 +60,12 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
       }} /></MapBoundary>}
       {clip && <section className="video-viewer" aria-labelledby={`video-viewer-${trip.id}`} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeVideo(); } }}>
         <header><div><h2 id={`video-viewer-${trip.id}`}>{clip.place}</h2><time dateTime={clip.date}>{tripDate(clip.date)}</time></div><button ref={videoClose} type="button" onClick={closeVideo}>close</button></header>
-        <video ref={player} key={clip.video.id} src={clip.video.src} poster={clip.video.poster} controls playsInline preload="none" width={clip.video.width} height={clip.video.height} aria-label={clip.video.title} onTimeUpdate={event => setPlaybackTime(event.currentTarget.currentTime)} onSeeking={event => setPlaybackTime(event.currentTarget.currentTime)}>
+        <video ref={player} key={clip.video.id} poster={clip.video.poster} controls playsInline preload="none" width={clip.video.width} height={clip.video.height} aria-label={clip.video.title} onTimeUpdate={event => setPlaybackTime(event.currentTarget.currentTime)} onSeeking={event => setPlaybackTime(event.currentTarget.currentTime)}>
+          <source src={clip.video.src} type="video/mp4" />
           {clip.video.captions && <track kind="captions" src={clip.video.captions} srcLang="en" label="English" default />}
           <a href={clip.video.src}>Open video</a>
         </video>
+        <a className="video-original" href={clip.video.original?.src ?? clip.video.src} download>{clip.video.original ? 'download original-quality video' : 'download video'}</a>
         <p className="video-position-status" aria-live="off">{failed ? 'Map unavailable · video still playable' : clip.video.track ? videoPosition(clip.video.track, playbackTime) ? 'Recorded GPS · follows playback' : 'No GPS fix at this video position' : 'No recorded GPS available'}</p>
         {trip.draft && !clip.video.captions && <p className="video-review-note">Local preview · audio/caption review pending.</p>}
       </section>}
@@ -74,7 +76,7 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
       if (event.key === 'ArrowLeft' && index !== null) { event.preventDefault(); setIndex(Math.max(0, index - 1)); }
     }}>
       <header><div><h2 id={`viewer-${trip.id}`}>{selected?.place ?? trip.title}</h2>{selected && <time dateTime={selected.date}>{tripDate(selected.date)}</time>}</div><button type="button" onClick={() => viewer.current?.close()}>close</button></header>
-      {selected && <figure><img src={selected.photo.src} alt={selected.photo.alt} width={selected.photo.width} height={selected.photo.height} /><figcaption>{selected.photo.caption}</figcaption></figure>}
+      {selected && <figure><img src={selected.photo.original?.src ?? selected.photo.src} alt={selected.photo.alt} width={selected.photo.original?.width ?? selected.photo.width} height={selected.photo.original?.height ?? selected.photo.height} /><figcaption>{selected.photo.caption}</figcaption></figure>}
       <nav aria-label="Photo navigation"><button type="button" disabled={index === null || index === 0} onClick={() => setIndex(i => i === null ? null : Math.max(0, i - 1))}>previous</button><span>{index === null ? '' : `${index + 1} / ${photos.length}`}</span><button type="button" disabled={index === null || index === photos.length - 1} onClick={() => setIndex(i => i === null ? null : Math.min(photos.length - 1, i + 1))}>next</button></nav>
     </dialog>
   </section>;

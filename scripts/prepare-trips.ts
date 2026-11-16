@@ -17,13 +17,17 @@ export async function prepareTrips() {
       const name = p.src.slice(prefix.length).replace('-1800.webp', '');
       await mkdir(`public${prefix}`, { recursive: true });
       for (const width of [640, 1280, 1800]) await cp(`.generated/travel-draft/media/${name}-${width}.webp`, `public${prefix}${name}-${width}.webp`);
+      if (p.original) {
+        if (p.original.src !== `${prefix}${name}-original.webp`) throw new Error('Original-quality photos must be sanitized generated WebP copies.');
+        await cp(`.generated/travel-draft/media/${name}-original.webp`, `public${p.original.src}`);
+      }
     }
     for (const stop of trip.stops) for (const video of stop.videos ?? []) {
       const prefix = `/travels/preview/${trip.id}/`;
-      for (const asset of [video.src, video.poster, ...(video.captions ? [video.captions] : [])]) {
+      for (const asset of [video.src, video.poster, ...(video.original ? [video.original.src] : []), ...(video.captions ? [video.captions] : [])]) {
         if (!asset.startsWith(prefix) || !/^[a-z0-9-]+\.(mp4|webp|vtt)$/.test(asset.slice(prefix.length))) throw new Error('Preview videos need flat, local sanitized media paths.');
         const source = `.generated/travel-draft/media/${asset.slice(prefix.length)}`;
-        if ((await stat(source)).size > 768 * 1024 * 1024) throw new Error('Private preview media exceeds its local safety budget. Large videos require separate hosting approval before publication.');
+        if ((await stat(source)).size > 2 * 1024 * 1024 * 1024) throw new Error('Private preview media exceeds its local safety budget. Large videos require separate hosting approval before publication.');
         await mkdir(`public${prefix}`, { recursive: true });
         await cp(source, `public${asset}`);
       }
