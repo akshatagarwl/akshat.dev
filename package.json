@@ -9,16 +9,21 @@
     "dev": "bun run prepare-content && NEXT_TELEMETRY_DISABLED=1 next dev --hostname 127.0.0.1 --port 4321",
     "build": "bun run prepare-content && bun run test:engine && NEXT_TELEMETRY_DISABLED=1 next build && bun scripts/prepare-deploy.ts",
     "preview": "WRANGLER_SEND_METRICS=false node node_modules/wrangler/bin/wrangler.js dev --local --ip 127.0.0.1 --port 4321",
+    "preview:travel": "TRAVEL_PREVIEW=1 bun run build && WRANGLER_SEND_METRICS=false node node_modules/wrangler/bin/wrangler.js dev --assets .generated/travel-export --local --ip 127.0.0.1 --port 4321",
     "check": "bun run prepare-content && NEXT_TELEMETRY_DISABLED=1 next typegen && tsc --noEmit",
     "test": "playwright test",
-    "test:engine": "node scripts/test-seedbed.mjs && bun scripts/test-travels.tsx",
+    "test:travel-preview": "playwright test --config playwright.travel.config.ts",
+    "test:engine": "node scripts/test-seedbed.mjs && bun scripts/test-travels.tsx && bun scripts/test-trips.tsx",
     "render:garden": "node scripts/render-garden.mjs",
-    "deploy": "bun run build && WRANGLER_SEND_METRICS=false node node_modules/wrangler/bin/wrangler.js deploy"
+    "deploy": "bun run build && bun scripts/assert-publishable.ts && WRANGLER_SEND_METRICS=false node node_modules/wrangler/bin/wrangler.js deploy"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "5.3.0",
     "@fontsource-variable/newsreader": "5.3.0",
     "@fontsource/ibm-plex-mono": "5.3.0",
+    "d3-geo": "3.1.1",
+    "d3-selection": "3.0.0",
+    "d3-zoom": "3.0.0",
     "lucide-react": "1.73.0",
     "next": "16.4.6",
     "react": "19.3.1",
@@ -27,9 +32,13 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.65.1",
+    "@types/d3-geo": "3.1.0",
+    "@types/d3-selection": "3.0.11",
+    "@types/d3-zoom": "3.0.8",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "sharp": "0.35.5",
     "typescript": "6.0.3",
     "wrangler": "4.162.0"
   }

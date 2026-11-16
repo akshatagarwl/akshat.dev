@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import notes from '../data/notes.json';
+import { prepareTrips } from './prepare-trips';
 
 await mkdir('.generated', { recursive: true });
 const content: Record<string, string> = {};
@@ -10,3 +11,4 @@ for (const { slug } of notes) {
 }
 await writeFile('.generated/notes.json', JSON.stringify(content));
 console.log(`Prepared ${notes.length} trusted, local agent notes.`);
+await prepareTrips();

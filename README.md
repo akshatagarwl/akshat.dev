@@ -1,6 +1,6 @@
 # akshat.dev
 
-A light-only personal website: eight projects, a roadside travel diary, two agent notes and sixteen reading links. No theme selectors or preference storage. Six reading links are shown initially; a native disclosure opens the remaining ten.
+A light-only personal website: eight projects, photo-led travel diaries, two agent notes and sixteen reading links. No theme selectors or preference storage. Six reading links are shown initially; a native disclosure opens the remaining ten.
 
 ## Existing tools, not a custom animation engine
 
@@ -10,11 +10,13 @@ The React adapter supplies eight flower colors, mixed cosmos/daisy/tulip/lavende
 
 Reduced motion, absent Canvas and no JavaScript show local flower images rendered by the same engine. Old saved preferences are ignored; the whole site stays light even when the OS is dark. No preferences are read or stored.
 
-## Roadside diary
+## Travel diaries
 
-A bicycle follows normal scrolling through mountain contours and shoreline marks. With entries, the landscape stays beside the reading journey while dated notebook pages pass below; no hidden prose, map dashboard or scroll hijacking. Native CSS view timelines and Lucide icons provide the behavior and symbols. Reduced motion/unsupported browsers retain readable, static scenery.
+A Polarsteps-like gallery opens into a regional map beside full-size photo stops. Normal reading highlights the current place; D3 provides bounded pan/zoom, with no wheel/touch scroll hijacking. A native modal supports photo navigation, Escape and focus return. Photos remain readable without JavaScript. Reduced motion removes map pinning and automatic recentering; mobile keeps the map nonsticky.
 
-Add real places, monthly dates, notes and approved local photos in `data/travels.json`. It starts empty and the entire section stays hidden until the first real entry—no placeholder or invented trips. See [`docs/travel-diary.md`](docs/travel-diary.md) for the interaction design, content template and photo privacy requirements.
+The first local prototype uses Taiwan, a self-hosted public-domain Natural Earth basemap and owner-supplied photos. No remote tiles, map accounts, invented routes or diary prose. Photo derivatives are metadata-free, but visible people/private details still need manual review.
+
+Approved records go in initially empty `data/trips.json`. Until then, the gallery and travel routes are absent from production. Private drafts/media stay ignored and export only to `.generated/travel-export`, never production `out/`. See [`docs/travel-diary.md`](docs/travel-diary.md) for the local preview and review/publication workflow. The older abstract roadside diary remains a tested legacy fallback.
 
 ## Run
 
@@ -24,12 +26,14 @@ Use Node/Bun pinned in `mise.toml`:
 bun install --frozen-lockfile
 bun run dev                  # http://127.0.0.1:4321
 bun run check
-bun run test:engine           # Seedbed lifecycle + diary validation/rendering tests
+bun run test:engine           # Seedbed lifecycle + diary/trip validation tests
 bun run build                # prepares trusted notes and exports to out/
 bun run preview              # local Cloudflare runtime, port 4321
 bunx playwright install chromium
 bun run test
 bun run render:garden        # optional: regenerate static flower images locally
+bun run preview:travel       # private local draft; requires staged media/manifest
+bun run test:travel-preview  # opt-in private preview checks; never a public CI fixture
 ```
 
 Set `PLAYWRIGHT_CHROME_PATH` to an existing Chrome executable instead of installing managed Chromium. Browser tests use isolated profiles, not personal sessions. Stop an existing preview before starting dev on the same port. Next/Wrangler run under Node; Bun manages dependencies and renders trusted local Markdown. Build-tool telemetry is disabled.
@@ -40,7 +44,7 @@ Flowers stay in the empty home scene and desktop margins, not over text. Notes r
 
 No account API, analytics, remote fonts, tokens or permission prompts. Do not publish credentials, device identifiers, account profiles, signing keys, personal channel lists or private exceptions. Seedbed's account/store/API/telemetry code is not included.
 
-See [`docs/verification.md`](docs/verification.md) for checks and limitations. Code is MIT; third-party and font licenses are in `public/licenses/`.
+See [`docs/verification.md`](docs/verification.md) for checks and limitations. Code is MIT; third-party and font licenses are in `public/licenses/`. Personal travel photographs/videos are not covered by the code license. Natural Earth map data is public domain.
 
 ## Deployment
 

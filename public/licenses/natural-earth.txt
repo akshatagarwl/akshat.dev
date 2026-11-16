@@ -1,0 +1,11 @@
+Made with Natural Earth.
+
+All versions of Natural Earth raster and vector map data are in the public domain.
+Primary authors: Tom Patterson, Nathaniel Vaughn Kelso, and contributors.
+No permission is needed; credit is not required. Data is provided without warranties.
+
+Terms: https://www.naturalearthdata.com/about/terms-of-use/
+Source: https://github.com/nvkelso/natural-earth-vector
+Revision: ca96624a56bd078437bca8184e78163e5039ad19
+Dataset: geojson/ne_50m_admin_0_countries.geojson
+Derived file: data/taiwan-basemap.json (locally projected/clipped SVG paths)

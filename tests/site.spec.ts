@@ -234,6 +234,9 @@ test('built assets preserve redirects, metadata, headers and real 404s', async (
   expect((await request.get('/sitemap.xml')).status()).toBe(200);
   expect((await request.get('/robots.txt')).status()).toBe(200);
   expect((await request.get('/not-a-real-page')).status()).toBe(404);
+  expect((await request.get('/travels')).status()).toBe(404);
+  expect((await request.get('/travels/taiwan')).status()).toBe(404);
+  expect((await request.get('/travels/preview/taiwan/train-640.webp')).status()).toBe(404);
 });
 
 test('home and notes pass layout and automated accessibility checks', async ({ page }, testInfo) => {

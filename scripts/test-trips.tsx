@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { parseTrips, photoSrcSet } from '../lib/trips';
+import { TravelGallery } from '../components/TravelGallery';
+
+const image = { id: 'sample', src: '/travels/fixture/sample-1800.webp', alt: 'Clearly labelled test photograph.', width: 1800, height: 1800 };
+const valid = { id: 'fixture', title: 'Test trip <script>', month: '2025-06', cover: image, stops: [{ id: 'test-place', place: 'Test place', location: [121, 23], photos: [image] }] };
+const parse = (value: unknown) => parseTrips([value]);
+assert.deepEqual(parseTrips([]), []);
+assert.equal(renderToStaticMarkup(<TravelGallery trips={[]} />), '');
+assert.equal(parse(valid)[0].title, valid.title);
+for (const value of [null, {}, { ...valid, id: '../oops' }, { ...valid, month: '2025-99' }, { ...valid, stops: [] }, { ...valid, cover: { ...image, id: 'not-in-trip' } }, { ...valid, draft: 'true' }]) assert.throws(() => parse(value));
+for (const location of [[181, 23], [121, 85], [NaN, 23], [121], ['121', 23]]) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], location }] }));
+for (const src of ['https://example.com/a.webp', '/travels/../private.webp', '/travels/a/a.webp?gps=1']) assert.throws(() => parse({ ...valid, cover: { ...image, src } }));
+assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], photos: [{ ...image, width: -1 }] }] }));
+assert.throws(() => parseTrips([valid, valid]));
+assert.throws(() => parse({ ...valid, stops: [valid.stops[0], { ...valid.stops[0], id: 'other' }] }));
+assert.match(photoSrcSet(image)!, /sample-640.webp 640w/);
+const html = renderToStaticMarkup(<TravelGallery trips={parse(valid)} />);
+assert.ok(html.includes('&lt;script&gt;') && !html.includes('<script>'));
+assert.ok(html.includes('/travels/fixture'));
+console.log('Trip checks pass: validation, local media, bounds, empty gallery, escaping and responsive photos.');

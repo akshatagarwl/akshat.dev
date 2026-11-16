@@ -3,6 +3,7 @@ import '@fontsource-variable/dm-sans';
 import '@fontsource-variable/newsreader';
 import '@fontsource/ibm-plex-mono/latin-400.css';
 import './globals.css';
+import './travels/travel.css';
 import FlowerGarden from '@/components/FlowerGarden';
 import { Margins } from '@/components/Landscape';
 
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
   openGraph: { type: 'website', siteName: 'akshat.dev' },
   twitter: { card: 'summary' },
   icons: { icon: '/favicon.svg' },
+  ...(process.env.TRAVEL_PREVIEW === '1' ? { robots: { index: false, follow: false } } : {}),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

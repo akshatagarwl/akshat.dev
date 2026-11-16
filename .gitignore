@@ -4,6 +4,7 @@ dist/
 .next/
 out/
 .generated/
+public/travels/preview/
 next-env.d.ts
 *.tsbuildinfo
 .wrangler/
