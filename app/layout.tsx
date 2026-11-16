@@ -23,9 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <FlowerGarden side="left" />
       <FlowerGarden side="right" />
       <div className="site-shell">
-        <header className="site-header"><a className="site-brand" href="/" aria-label="Akshat home"><span className="brand-seed" aria-hidden="true" />akshat.dev</a></header>
+        <header className="site-header"><a className="site-brand" href="/" aria-label="Akshat home">akshat.dev</a></header>
         <main id="main" data-content>{children}</main>
-        <footer className="site-footer"><a href="https://github.com/akshatagarwl/akshat.dev" target="_blank" rel="noopener noreferrer">source ↗</a><a href="https://github.com/VedSoni-dev/seedbed" target="_blank" rel="noopener noreferrer">garden by seedbed ↗</a></footer>
+        <footer className="site-footer"><a href="https://github.com/akshatagarwl/akshat.dev" target="_blank" rel="noopener noreferrer">source</a><a href="https://github.com/VedSoni-dev/seedbed" target="_blank" rel="noopener noreferrer">garden by seedbed</a></footer>
       </div>
     </body>
   </html>;

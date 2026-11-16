@@ -23,15 +23,13 @@ button:disabled { cursor: default; }
 .skip-link:focus { top: 12px; }
 .site-shell { position: relative; max-width: 640px; margin: 0 auto; padding: 38px 0 30px; }
 .site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 60px; }
-.site-brand { display: flex; align-items: center; gap: 8px; font-size: 12px; text-decoration: none; white-space: nowrap; }
-.brand-seed { width: 7px; height: 12px; border: 1px solid var(--accent); border-radius: 100% 0 100% 0; transform: rotate(-20deg); }
+.site-brand { font-size: 12px; text-decoration: none; white-space: nowrap; }
 h1, h2 { font-family: 'Newsreader Variable', Georgia, serif; font-weight: 450; letter-spacing: -.035em; }
 h1 { font-size: 44px; line-height: 1.1; margin: 0 0 14px; }
 h2 { font-size: 28px; line-height: 1.2; margin: 0 0 18px; }
 p { margin: 0 0 16px; }
 .intro-description { max-width: 450px; font-size: 15px; color: var(--muted); margin-bottom: 12px; }
 .contact { display: inline-block; min-height: 28px; font-size: 13px; }
-.link-arrow { display: inline-block; margin-left: 8px; color: var(--muted); font-size: 12px; }
 .flower-garden { position: relative; overflow: hidden; background: var(--paper); }
 .garden-main { height: 224px; margin: 20px -10px 30px; mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 18px), transparent); }
 .flower-garden canvas { touch-action: pan-y !important; }

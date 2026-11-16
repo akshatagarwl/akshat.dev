@@ -15,7 +15,7 @@ export default async function Note({ params }: { params: Promise<{ slug: string 
   const note = notes.find(item => item.slug === slug);
   if (!note || !(slug in content)) notFound();
   return <div className="note-page">
-    <a className="back-link" href="/#notes">← back to agent notes</a>
+    <a className="back-link" href="/#notes">back to agent notes</a>
     <p className="eyebrow">{note.topic} / working context</p>
     <h1>{note.title}</h1>
     <aside className="agent-notice" aria-label="Agent notes"><strong>agent notes — not for human eyes</strong><p>Working context for my coding agents, not polished writing or a guide to follow.</p></aside>

@@ -22,6 +22,10 @@ test('no selectors, less copy, original links and light mode without external re
   await ready(page);
   expect(await page.locator('html').evaluate(el => getComputedStyle(el).colorScheme)).toBe('light');
   await expect(page.getByRole('button')).toHaveCount(0);
+  await expect(page.locator('.site-brand')).toHaveText('akshat.dev');
+  await expect(page.locator('.site-brand > *')).toHaveCount(0);
+  await expect(page.locator('.link-arrow, .brand-seed')).toHaveCount(0);
+  expect((await page.locator('a').allTextContents()).some(text => /[↗←]/.test(text))).toBe(false);
   for (const project of projects) await expect(page.locator(`#projects a[href="${project.url}"]`)).toHaveCount(1);
   await expect(page.locator('#notes li')).toHaveCount(2);
   await expect(page.locator('#links li')).toHaveCount(16);
