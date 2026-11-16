@@ -1,5 +1,6 @@
 export type TripPhoto = { id: string; src: string; alt: string; width: number; height: number; caption?: string };
-export type TripVideo = { id: string; src: string; poster: string; title: string; width: number; height: number; duration: number; captions?: string };
+export type VideoPosition = [seconds: number, longitude: number, latitude: number];
+export type TripVideo = { id: string; src: string; poster: string; title: string; width: number; height: number; duration: number; captions?: string; track?: VideoPosition[] };
 export type TripStop = { id: string; place: string; date?: string; location?: [number, number]; locationNote?: string; note?: string; photos: TripPhoto[]; videos?: TripVideo[] };
 export type Trip = { id: string; title: string; month: string; cover: TripPhoto; stops: TripStop[]; draft?: boolean };
 
@@ -18,12 +19,24 @@ function video(value: unknown): TripVideo {
   if (!object(value) || !slug(value.id) || !local(value.src, 'mp4') || !local(value.poster, 'webp') || !text(value.title)) throw new Error('Videos need an id, local MP4/poster and descriptive title.');
   if (![value.width, value.height].every(n => typeof n === 'number' && Number.isInteger(n) && n > 0 && n <= 12000) || typeof value.duration !== 'number' || !Number.isFinite(value.duration) || value.duration <= 0) throw new Error('Videos need valid dimensions and duration.');
   if (value.captions !== undefined && !local(value.captions, 'vtt')) throw new Error('Captions must be a local VTT file.');
-  return { id: value.id, src: value.src as string, poster: value.poster as string, title: value.title, width: value.width as number, height: value.height as number, duration: value.duration, captions: value.captions as string | undefined };
+  if (value.track !== undefined && (!Array.isArray(value.track) || value.track.length < 2 || value.track.length > 10000 || value.track.some((point, i, all) => !Array.isArray(point) || point.length !== 3 || !point.every(n => typeof n === 'number' && Number.isFinite(n)) || point[0] < 0 || point[0] > (value.duration as number) || Math.abs(point[1]) > 180 || Math.abs(point[2]) >= 85 || (i > 0 && point[0] <= all[i - 1][0])))) throw new Error('Recorded GPS needs ordered, finite relative-time samples within the video.');
+  return { id: value.id, src: value.src as string, poster: value.poster as string, title: value.title, width: value.width as number, height: value.height as number, duration: value.duration, captions: value.captions as string | undefined, track: value.track as VideoPosition[] | undefined };
 }
 
 export function videoDuration(seconds: number) { const whole = Math.ceil(seconds); return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`; }
 
-/** Local, reviewed content only. Coordinates are approximate place centres, not photo GPS. */
+/** Interpolate only adjacent recorded samples; never bridge a GPS outage. */
+export function videoPosition(track: VideoPosition[] | undefined, time: number): [number, number] | undefined {
+  if (!track?.length || !Number.isFinite(time) || time < track[0][0]) return;
+  const next = track.findIndex(p => p[0] > time);
+  if (next === -1) { const last = track[track.length - 1]; return time - last[0] <= 1.5 ? [last[1], last[2]] : undefined; }
+  const a = track[next - 1], b = track[next];
+  if (time === a[0]) return [a[1], a[2]];
+  if (b[0] - a[0] > 5) return;
+  const t = (time - a[0]) / (b[0] - a[0]); return [a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+}
+
+/** Local, reviewed content only. Approximate centres by default; recorded video GPS needs explicit owner authorization. */
 export function parseTrips(value: unknown): Trip[] {
   if (!Array.isArray(value)) throw new Error('Trips must be an array.');
   const ids = new Set<string>();

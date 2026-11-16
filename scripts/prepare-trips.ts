@@ -23,7 +23,7 @@ export async function prepareTrips() {
       for (const asset of [video.src, video.poster, ...(video.captions ? [video.captions] : [])]) {
         if (!asset.startsWith(prefix) || !/^[a-z0-9-]+\.(mp4|webp|vtt)$/.test(asset.slice(prefix.length))) throw new Error('Preview videos need flat, local sanitized media paths.');
         const source = `.generated/travel-draft/media/${asset.slice(prefix.length)}`;
-        if ((await stat(source)).size > 24 * 1024 * 1024) throw new Error('Preview media exceeds the static asset budget.');
+        if ((await stat(source)).size > 768 * 1024 * 1024) throw new Error('Private preview media exceeds its local safety budget. Large videos require separate hosting approval before publication.');
         await mkdir(`public${prefix}`, { recursive: true });
         await cp(source, `public${asset}`);
       }

@@ -6,7 +6,7 @@ Current owner direction: **add dates, keep only the map, reuse existing map comp
 
 - **react-map-gl 8.1.3** composes MapLibre's Map, Marker, Popup, NavigationControl and ScaleControl. **MapLibre GL 6.18.0** owns rendering, interaction, resource cleanup and reduced-motion behavior. There is no site-built renderer, projection, terrain, orbit controller or animation loop.
 - **Protomaps basemaps 5.7.2** supplies the existing light cartography. Labels are localized to English using upstream English/Latin names; no invented labels. **PMTiles 4.5.0** reads the self-hosted regional archive through its official FileSource.
-- `/travels`, homepage previews and `/travels/[trip]` are map-only. A small map caption shows the month; photo markers and standard library popups show the factual stop date when supplied. Dates without a known day remain month-only. No separate journal, timeline, route, sidebar or fabricated travel-day numbers.
+- `/travels`, homepage previews and `/travels/[trip]` are map-only. A small map caption shows the month; photo markers and standard library popups show the factual stop date when supplied. Dates without a known day remain month-only. No separate journal, timeline, sidebar or fabricated travel-day numbers. Recorded video tracks are the explicit owner-requested exception to the no-route default; never infer a route between photographs.
 - Approximate place centres are **not captured GPS**. Do not add a route without an owner-approved source. The photo viewer preserves native dialog modality, arrow navigation, Escape, modified-click image links and focus return.
 - Standard zoom/pan/keyboard controls and fit are available. No wheel zoom, touch pinch interception or automatic camera travel. Cooperative gestures preserve single-finger page scrolling. No appearance preference storage or geolocation.
 - A generic poster rendered by the same map library and a native “Photos and dates” disclosure remain usable without JS or when the archive cannot load. The poster contains no personal pins, photographs or dates.
@@ -27,7 +27,7 @@ Draft `.generated/travel-draft/trips.json` uses `Trip` in `lib/trips.ts`:
 - Trip: `id`, `title`, `month` (`YYYY-MM`), `draft: true`, `cover`, ordered `stops`.
 - Stop: `id`, `place`, `photos`, optional real `date` (`YYYY-MM-DD`), approximate `location: [longitude, latitude]`, optional `locationNote`/owner-written `note` retained as data. The current map-only UI does not invent/display a diary.
 - Photo: `id`, `src`, descriptive `alt`, pixel `width`/`height`, optional factual `caption`.
-- Optional stop `videos`: each needs `id`, local MP4 `src`, WebP `poster`, factual `title`, pixel `width`/`height`, duration in seconds, optional local VTT `captions`. A stop may have `photos: []` when it has videos. Video IDs share the trip media namespace.
+- Optional stop `videos`: each needs `id`, local MP4 `src`, WebP `poster`, factual `title`, pixel `width`/`height`, duration in seconds, optional local VTT `captions`, optional explicitly authorized recorded `track: [relativeSeconds, longitude, latitude][]`. A stop may have `photos: []` when it has videos. Video IDs share the trip media namespace.
 - Preview source: `/travels/preview/<trip-id>/<photo-slug>-1800.webp`.
 - Duplicate IDs, remote/traversing image paths, invalid months/calendar dates/dimensions/coordinates and a cover outside the trip fail validation.
 
@@ -46,9 +46,21 @@ Export only the requested item from Photos using its scripting export command; t
 node scripts/import-travel-video.mjs /path/to/video.mp4 your-video-slug
 ```
 
-Requires local ffmpeg/ffprobe. Produces a complete, untrimmed H.264/AAC MP4, at most 1280×720/24fps, and a WebP poster under ignored draft media. Explicit stream mapping excludes telemetry/subtitles/data tracks; source GPS, camera/device tags, full timestamps and timecode are removed. Generic codec/container fields remain. Source audio is preserved, so privacy/audio/caption review is still necessary. Import refuses overwrites and outputs over 24MiB. `--finalize` validates/finalizes an existing derivative after an interrupted poster-generation step; it does not re-encode or modify originals.
+Requires local ffmpeg/ffprobe. Produces a complete, untrimmed H.264/AAC MP4, at most 1920×1080 at the source frame rate, and a WebP poster under ignored draft media. The macOS encoder uses VideoToolbox at 14Mbps; other systems use x264 CRF20. AAC source audio is copied when possible. Do not silently reduce quality to meet a static-file cap. Explicit stream mapping excludes telemetry/subtitles/data tracks; source GPS, camera/device tags, full timestamps and timecode are removed. Generic codec/container fields remain. Source audio is preserved, so privacy/audio/caption review is still necessary. Import refuses overwrites. Optional `--compact` deliberately opts into the earlier 720p/24fps/24MiB budget; it is not the default. `--finalize` validates/finalizes an existing derivative after an interrupted poster-generation step; it does not re-encode or modify originals.
 
-The local stop record uses a factual date-only value and approximate regional centre, never captured GPS. A standard popup leads to a native video dialog: controls, plays-inline, `preload="none"`, no autoplay. No MP4 request occurs before the user plays it. Closing/Escape pauses and unmounts the player; no-JS/unsupported dialog paths retain ordinary MP4 links. Existing photo navigation remains separate.
+The native player is a small overlay inside the map, not a modal hiding the map: browser controls, plays-inline, `preload="none"`, no autoplay. Local Chromium confirms no MP4 request before deliberate playback. Closing/Escape pauses, detaches the source, unmounts the player and returns focus to its marker. No-JS retains ordinary MP4 links. Existing photo navigation remains separate.
+
+At the owner's explicit request, recorded GPS may be extracted locally:
+
+```sh
+node scripts/extract-travel-gps.mjs /path/to/video.mp4 your-video-slug
+```
+
+Requires ExifTool. Writes an ignored sidecar of relative-time longitude/latitude samples, using valid 2D/3D fixes with reported horizontal error at most 25m. It omits UTC times, altitude and device identity. Review and explicitly attach the samples as the video's `track` in the ignored draft record; never auto-publish them. No GPS means no fabricated route or moving marker. Photo-stop centres remain approximate by default.
+
+Playback/seeking updates a standard MapLibre Marker; standard Source/Layer components show the recorded line. Interpolation is only between nearby recorded samples; gaps over five seconds hide the position and break the line. Opening a video deliberately fits its recorded extent with padding for the actual player/caption; subsequent playback never moves the camera. Closing restores the previous view. No current/browser geolocation is accessed. Higher detail uses overzoomed existing vectors, not fabricated street data.
+
+High-quality local videos can exceed Cloudflare's 25MiB static-file cap. The loopback-only private server uses pinned MIT sirv for byte-range streaming and carries the same privacy/CSP headers plus noindex. It rejects CI and non-loopback Host/Origin values. Normal Cloudflare deployment is unchanged; the publication guard rejects oversized assets instead of forcing destructive compression. Obtain separate approval for suitable media hosting before publishing a large video or precise track.
 
 Do not add fake/empty caption tracks. Review the full clip, audio and any necessary captions/transcript before publication; a local player is not a claim of caption-complete accessibility.
 

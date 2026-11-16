@@ -1,9 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Trip, TripVideo } from '@/lib/trips';
-import { tripDate } from '@/lib/trips';
+import { tripDate, videoPosition } from '@/lib/trips';
 
 const MapLibreTripMap = dynamic(() => import('./MapLibreTripMap'), { ssr: false });
 class MapBoundary extends Component<{ children: ReactNode; onFailure: () => void }, { failed: boolean }> {
@@ -14,10 +14,16 @@ class MapBoundary extends Component<{ children: ReactNode; onFailure: () => void
 }
 
 export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
-  const root = useRef<HTMLElement>(null), viewer = useRef<HTMLDialogElement>(null), videoViewer = useRef<HTMLDialogElement>(null);
-  const [clip, setClip] = useState<{ video: TripVideo; place: string; date: string } | null>(null);
+  const root = useRef<HTMLElement>(null), viewer = useRef<HTMLDialogElement>(null), player = useRef<HTMLVideoElement>(null), videoClose = useRef<HTMLButtonElement>(null), videoOpener = useRef<HTMLElement | null>(null), returnStop = useRef<string | null>(null);
+  const [clip, setClip] = useState<{ video: TripVideo; place: string; date: string; stopId: string } | null>(null);
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const closeVideo = () => {
+    player.current?.pause(); player.current?.removeAttribute('src'); player.current?.load();
+    returnStop.current = clip?.stopId ?? null; setClip(null); setPlaybackTime(0);
+  };
   const [visible, setVisible] = useState(false), [ready, setReady] = useState(false), [failed, setFailed] = useState(false);
   const [index, setIndex] = useState<number | null>(null);
+  const onMapReady = useCallback(() => setReady(true), []), onMapFailure = useCallback(() => setFailed(true), []);
   const photos = trip.stops.flatMap(stop => stop.photos.map(photo => ({ photo, place: stop.place, date: stop.date ?? trip.month })));
   const selected = index === null ? undefined : photos[index];
   const Heading = href ? 'h2' : 'h1';
@@ -32,7 +38,10 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
     if (!dialog.open) dialog.showModal();
     else if (!dialog.contains(document.activeElement) || (document.activeElement instanceof HTMLButtonElement && document.activeElement.disabled)) dialog.querySelector<HTMLButtonElement>('button')?.focus();
   }, [index]);
-  useEffect(() => { if (clip && !videoViewer.current?.open) videoViewer.current?.showModal(); }, [clip]);
+  useEffect(() => {
+    if (clip) videoClose.current?.focus();
+    else if (returnStop.current) { const target = videoOpener.current?.isConnected ? videoOpener.current : root.current?.querySelector<HTMLButtonElement>(`button[data-stop-id="${returnStop.current}"]`); target?.focus(); returnStop.current = null; }
+  }, [clip]);
   return <section ref={root} className="trip-map" aria-label={`${trip.title} travel map`} data-renderer={failed ? 'fallback' : ready ? 'maplibre' : 'loading'}>
     <div className="trip-map-stage">
       <div className="map-static" hidden={ready && !failed}>
@@ -40,14 +49,24 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
         <details className="map-static-photos"><summary>Media and dates</summary>{photos.map(({ photo, place, date }) => <a key={photo.id} href={photo.src}>{place} · <time dateTime={date}>{tripDate(date)}</time></a>)}{trip.stops.flatMap(stop => stop.videos?.map(video => <a key={video.id} href={video.src}>{stop.place} · <time dateTime={stop.date ?? trip.month}>{tripDate(stop.date ?? trip.month)}</time> · video</a>) ?? [])}</details>
         <small className="map-static-credit"><a href="https://protomaps.com">Protomaps</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://esa-worldcover.org/en/data-access">ESA WorldCover</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)</small>
       </div>
-      {visible && !failed && <MapBoundary onFailure={() => setFailed(true)}><MapLibreTripMap trip={trip} onReady={() => setReady(true)} onFailure={() => setFailed(true)} onPhoto={photo => {
+      {visible && !failed && <MapBoundary onFailure={onMapFailure}><MapLibreTripMap trip={trip} activeVideo={clip?.video} playbackTime={playbackTime} onReady={onMapReady} onFailure={onMapFailure} onPhoto={photo => {
+        player.current?.pause();
         if (typeof viewer.current?.showModal !== 'function') { location.assign(photo.src); return; }
         setIndex(photos.findIndex(p => p.photo.id === photo.id));
       }} onVideo={video => {
-        if (typeof videoViewer.current?.showModal !== 'function') { location.assign(video.src); return; }
         const stop = trip.stops.find(s => s.videos?.some(v => v.id === video.id))!;
-        setClip({ video, place: stop.place, date: stop.date ?? trip.month });
+        player.current?.pause(); videoOpener.current = document.activeElement as HTMLElement;
+        setPlaybackTime(0); setClip({ video, place: stop.place, date: stop.date ?? trip.month, stopId: stop.id });
       }} /></MapBoundary>}
+      {clip && <section className="video-viewer" aria-labelledby={`video-viewer-${trip.id}`} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeVideo(); } }}>
+        <header><div><h2 id={`video-viewer-${trip.id}`}>{clip.place}</h2><time dateTime={clip.date}>{tripDate(clip.date)}</time></div><button ref={videoClose} type="button" onClick={closeVideo}>close</button></header>
+        <video ref={player} key={clip.video.id} src={clip.video.src} poster={clip.video.poster} controls playsInline preload="none" width={clip.video.width} height={clip.video.height} aria-label={clip.video.title} onTimeUpdate={event => setPlaybackTime(event.currentTarget.currentTime)} onSeeking={event => setPlaybackTime(event.currentTarget.currentTime)}>
+          {clip.video.captions && <track kind="captions" src={clip.video.captions} srcLang="en" label="English" default />}
+          <a href={clip.video.src}>Open video</a>
+        </video>
+        <p className="video-position-status" aria-live="off">{failed ? 'Map unavailable · video still playable' : clip.video.track ? videoPosition(clip.video.track, playbackTime) ? 'Recorded GPS · follows playback' : 'No GPS fix at this video position' : 'No recorded GPS available'}</p>
+        {trip.draft && !clip.video.captions && <p className="video-review-note">Local preview · audio/caption review pending.</p>}
+      </section>}
       <header className="map-caption"><Heading>{trip.title}</Heading><time dateTime={trip.month}>{tripDate(trip.month)}</time>{trip.draft && <small>local draft · not published</small>}{href && <a className="trip-cover" href={href}>Explore the map</a>}</header>
     </div>
     <dialog ref={viewer} className="photo-viewer" aria-labelledby={`viewer-${trip.id}`} onClose={() => setIndex(null)} onClick={event => { if (event.target === event.currentTarget) viewer.current?.close(); }} onKeyDown={event => {
@@ -57,13 +76,6 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
       <header><div><h2 id={`viewer-${trip.id}`}>{selected?.place ?? trip.title}</h2>{selected && <time dateTime={selected.date}>{tripDate(selected.date)}</time>}</div><button type="button" onClick={() => viewer.current?.close()}>close</button></header>
       {selected && <figure><img src={selected.photo.src} alt={selected.photo.alt} width={selected.photo.width} height={selected.photo.height} /><figcaption>{selected.photo.caption}</figcaption></figure>}
       <nav aria-label="Photo navigation"><button type="button" disabled={index === null || index === 0} onClick={() => setIndex(i => i === null ? null : Math.max(0, i - 1))}>previous</button><span>{index === null ? '' : `${index + 1} / ${photos.length}`}</span><button type="button" disabled={index === null || index === photos.length - 1} onClick={() => setIndex(i => i === null ? null : Math.min(photos.length - 1, i + 1))}>next</button></nav>
-    </dialog>
-    <dialog ref={videoViewer} className="photo-viewer video-viewer" aria-labelledby={`video-viewer-${trip.id}`} onClose={() => { videoViewer.current?.querySelector('video')?.pause(); setClip(null); }} onClick={event => { if (event.target === event.currentTarget) videoViewer.current?.close(); }}>
-      <header><div><h2 id={`video-viewer-${trip.id}`}>{clip?.place ?? trip.title}</h2>{clip && <time dateTime={clip.date}>{tripDate(clip.date)}</time>}</div><button type="button" onClick={() => videoViewer.current?.close()}>close</button></header>
-      {clip && <><video key={clip.video.id} src={clip.video.src} poster={clip.video.poster} controls playsInline preload="none" width={clip.video.width} height={clip.video.height} aria-label={clip.video.title}>
-        {clip.video.captions && <track kind="captions" src={clip.video.captions} srcLang="en" label="English" default />}
-        <a href={clip.video.src}>Open video</a>
-      </video><p className="video-description">{clip.video.title}</p>{trip.draft && !clip.video.captions && <p className="video-review-note">Local preview · audio/caption review pending.</p>}</>}
     </dialog>
   </section>;
 }

@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import sharp from 'sharp';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { videoPosition } from '../lib/trips';
 import { spawnSync } from 'node:child_process';
 
 const trip = '/travels/taiwan';
@@ -90,7 +91,7 @@ test('no JavaScript keeps the real map poster and dated native image links', asy
   await expect.poll(() => page.locator('.map-poster').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(500);
   await page.getByText('Media and dates', { exact: true }).click();
   await expect(page.locator('.map-static-photos time')).toHaveText(['17 Oct 2026', '20 Oct 2026', '15 Oct 2026']);
-  await expect(page.locator('.map-static-photos a').last()).toHaveAttribute('href', /coast-ride\.mp4$/);
+  await expect(page.locator('.map-static-photos a').last()).toHaveAttribute('href', /coast-ride-hq\.mp4$/);
   await page.locator('.map-static-photos a').nth(1).click(); await expect(page).toHaveURL(/jiufen-1800\.webp$/);
   await context.close();
 });
@@ -152,7 +153,8 @@ test('video is click-to-play, decodes real frames, and stops on close', async ({
   const requests: string[] = [];
   page.on('request', request => { if (request.url().endsWith('.mp4')) requests.push(request.url()); });
   await ready(page);
-  await page.getByRole('button', { name: 'Explore Taiwan east coast, 15 Oct 2026', exact: true }).click();
+  const cameraReference = page.locator('[data-stop-id="jiufen"]').locator('..'), originalView = await cameraReference.getAttribute('style');
+  await page.getByRole('button', { name: 'Explore Bawengweng Bikeway, 15 Oct 2026', exact: true }).click();
   await expect(page.locator('.map-video-link')).toContainText('Play video · 2:54');
   expect(requests).toEqual([]);
   const link = page.getByRole('link', { name: /^Play video:/ });
@@ -172,20 +174,60 @@ test('video is click-to-play, decodes real frames, and stops on close', async ({
   await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible();
   await expect(page.locator('video')).toHaveCount(0);
   expect(await handle!.evaluate(v => (v as HTMLVideoElement).paused)).toBe(true);
-  await expect(link).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Explore Bawengweng Bikeway, 15 Oct 2026', exact: true })).toBeFocused();
+  await expect(cameraReference).toHaveAttribute('style', originalView!);
 });
 
-test('video derivative strips GPS/device/timestamp/data tracks and fits static hosting', async () => {
-  const result = spawnSync('ffprobe', ['-v', 'error', '-show_format', '-show_streams', '-of', 'json', '.generated/travel-draft/media/coast-ride.mp4'], { encoding: 'utf8' });
+test('high-quality video preserves frame rate and strips embedded sensitive metadata', async () => {
+  const result = spawnSync('ffprobe', ['-v', 'error', '-show_format', '-show_streams', '-of', 'json', '.generated/travel-draft/media/coast-ride-hq.mp4'], { encoding: 'utf8' });
   expect(result.status).toBe(0);
   const info = JSON.parse(result.stdout);
   expect(info.streams.map((s: { codec_type: string }) => s.codec_type)).toEqual(['video', 'audio']);
-  const poster = await sharp('.generated/travel-draft/media/coast-ride-poster.webp').metadata();
+  const poster = await sharp('.generated/travel-draft/media/coast-ride-hq-poster.webp').metadata();
   expect(poster.exif).toBeUndefined(); expect(poster.iptc).toBeUndefined(); expect(poster.xmp).toBeUndefined();
   expect(info.streams[0].codec_name).toBe('h264');
   expect(Number(info.format.duration)).toBeGreaterThan(173);
-  expect(Number(info.format.size)).toBeLessThan(24 * 1024 * 1024);
+  expect(info.streams[0].width).toBe(1920); expect(info.streams[0].height).toBe(1080);
+  expect(info.streams[0].r_frame_rate).toBe('30000/1001');
+  expect(Number(info.format.bit_rate)).toBeGreaterThan(10_000_000);
   expect(JSON.stringify([info.format.tags, ...info.streams.map((s: { tags: unknown }) => s.tags)])).not.toMatch(/location|creation_time|timecode|firmware|serial|gopro/i);
+});
+
+test('recorded GPS follows playback and seeking without moving the camera or requesting geolocation', async ({ page }) => {
+  await page.addInitScript(() => { navigator.geolocation.getCurrentPosition = () => { throw new Error('Current location must never be requested.'); }; navigator.geolocation.watchPosition = () => { throw new Error('Current location must never be requested.'); }; });
+  await ready(page);
+  await page.getByRole('button', { name: 'Explore Bawengweng Bikeway, 15 Oct 2026', exact: true }).click();
+  await page.getByRole('link', { name: /^Play video:/ }).click();
+  const marker = page.locator('.video-position-marker'), video = page.locator('video');
+  const draft = JSON.parse(readFileSync('.generated/travel-draft/trips.json', 'utf8'));
+  const track = draft[0].stops.find((s: { id: string }) => s.id === 'east-coast').videos[0].track;
+  await expect(marker).toBeVisible();
+  const initialDot = (await marker.boundingBox())!, initialPanel = (await page.locator('.video-viewer').boundingBox())!;
+  expect(initialDot.y + initialDot.height <= initialPanel.y || initialDot.x >= initialPanel.x + initialPanel.width).toBe(true);
+  const first = await marker.getAttribute('data-latitude');
+  const cameraReference = page.locator('[data-stop-id="jiufen"]').locator('..');
+  const before = await cameraReference.getAttribute('style');
+  await video.evaluate(async element => { const v = element as HTMLVideoElement; v.muted = true; await v.play(); v.pause(); v.currentTime = 90; });
+  await expect.poll(async () => Number(await marker.getAttribute('data-latitude'))).toBeCloseTo(videoPosition(track, 90)![1], 6);
+  await expect(marker).not.toHaveAttribute('data-latitude', first!);
+  await expect(cameraReference).toHaveAttribute('style', before!);
+  const dot = (await marker.boundingBox())!, panel = (await page.locator('.video-viewer').boundingBox())!;
+  expect(dot.y + dot.height <= panel.y || dot.x >= panel.x + panel.width).toBe(true);
+  expect(await video.evaluate(v => (v as HTMLVideoElement).paused)).toBe(true);
+  await expect(page.locator('.video-position-status')).toHaveText('Recorded GPS · follows playback');
+  await page.locator('.video-viewer').getByRole('button', { name: 'close' }).click();
+  await expect(marker).toHaveCount(0);
+});
+
+test('large private videos stream byte ranges and retain the same-origin privacy headers', async ({ request }) => {
+  const response = await request.get('/travels/preview/taiwan/coast-ride-hq.mp4', { headers: { Range: 'bytes=0-1023' } });
+  expect(response.status()).toBe(206); expect((await response.body()).length).toBe(1024);
+  expect(response.headers()['content-range']).toMatch(/^bytes 0-1023\//);
+  expect(response.headers()['permissions-policy']).toContain('geolocation=()');
+  expect(response.headers()['x-robots-tag']).toContain('noindex');
+  expect(response.headers()['content-security-policy']).toContain("default-src 'self'");
+  expect((await request.get('/', { headers: { Host: 'untrusted.example' } })).status()).toBe(403);
+  expect((await request.get('/', { headers: { Origin: 'https://untrusted.example' } })).status()).toBe(403);
 });
 
 test('map and popup UI remain accessible and fit narrow screens', async ({ page }, info) => {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { parseTrips, photoSrcSet, tripDate, videoDuration } from '../lib/trips';
+import { parseTrips, photoSrcSet, tripDate, videoDuration, videoPosition, type VideoPosition } from '../lib/trips';
 import { TravelGallery } from '../components/TravelGallery';
 
 const image = { id: 'sample', src: '/travels/fixture/sample-1800.webp', alt: 'Clearly labelled test photograph.', width: 1800, height: 1800 };
@@ -29,6 +29,16 @@ for (const duration of [0, -1, Infinity, NaN]) assert.throws(() => parse({ ...va
 assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, id: image.id }] }] }));
 assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, captions: 'https://example.com/captions.vtt' }] }] }));
 assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], photos: [], videos: [] }] }));
+const track: VideoPosition[] = [[0, 121, 23], [1, 122, 24], [10, 123, 25]];
+assert.deepEqual(videoPosition(track, 0), [121, 23]);
+assert.deepEqual(videoPosition(track, .5), [121.5, 23.5]);
+assert.equal(videoPosition(track, 5), undefined);
+assert.equal(videoPosition(track, -1), undefined);
+assert.equal(videoPosition(track, 12), undefined);
+assert.equal(videoPosition(undefined, 0), undefined);
+assert.deepEqual(videoPosition(track, 10), [123, 25]);
+assert.deepEqual(parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, track }] }] })[0].stops[0].videos?.[0].track, track);
+for (const badTrack of [[], [[0, 121, 23]], [[0, 121, 23], [0, 122, 24]], [[1, 121, 23], [0, 122, 24]], [[0, 181, 23], [1, 122, 24]], [[0, 121, 23], [174, 122, 24]], [[0, NaN, 23], [1, 122, 24]], [[0, 121, 23], [1, 122, 85]]]) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, track: badTrack }] }] }));
 assert.match(photoSrcSet(image)!, /sample-640.webp 640w/);
 const html = renderToStaticMarkup(<TravelGallery trips={parse(valid)} />);
 assert.ok(html.includes('&lt;script&gt;') && !html.includes('<script>'));
