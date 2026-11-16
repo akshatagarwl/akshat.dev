@@ -1,12 +1,17 @@
+[env]
+NEXT_TELEMETRY_DISABLED = "1"
+WRANGLER_SEND_METRICS = "false"
+
 [tools]
 bun = "1.4.2"
+node = "26.13.1"
 
 [tasks.install]
 run = "bun install --frozen-lockfile"
 
-[tasks.dev]
-run = "bun run dev"
-
 [tasks.build]
 depends = ["install"]
 run = "bun run build"
+
+[tasks.dev]
+run = "bun run dev"

@@ -1,0 +1,152 @@
+:root {
+  color-scheme: light;
+  --paper: #f6f4eb;
+  --ink: #30352e;
+  --muted: #64675a;
+  --accent: #426344;
+  --line: #dcded0;
+  font-family: 'DM Sans Variable', system-ui, sans-serif;
+  font-size: 16px;
+  background: var(--paper);
+  color: var(--ink);
+}
+* { box-sizing: border-box; }
+body { margin: 0; line-height: 1.6; }
+a { color: inherit; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+a:hover { color: var(--accent); }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 2px; }
+button, summary { font: inherit; }
+button { color: inherit; }
+button:disabled { cursor: default; }
+::selection { background: #e9d8a3; color: #30352e; }
+.skip-link { position: fixed; left: 20px; top: -100px; z-index: 5; padding: 8px 16px; background: var(--paper); }
+.skip-link:focus { top: 12px; }
+.site-shell { position: relative; max-width: 640px; margin: 0 auto; padding: 38px 0 30px; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 60px; }
+.site-brand { display: flex; align-items: center; gap: 8px; font-size: 12px; text-decoration: none; white-space: nowrap; }
+.brand-seed { width: 7px; height: 12px; border: 1px solid var(--accent); border-radius: 100% 0 100% 0; transform: rotate(-20deg); }
+h1, h2 { font-family: 'Newsreader Variable', Georgia, serif; font-weight: 450; letter-spacing: -.035em; }
+h1 { font-size: 44px; line-height: 1.1; margin: 0 0 14px; }
+h2 { font-size: 28px; line-height: 1.2; margin: 0 0 18px; }
+p { margin: 0 0 16px; }
+.intro-description { max-width: 450px; font-size: 15px; color: var(--muted); margin-bottom: 12px; }
+.contact { display: inline-block; min-height: 28px; font-size: 13px; }
+.link-arrow { display: inline-block; margin-left: 8px; color: var(--muted); font-size: 12px; }
+.flower-garden { position: relative; overflow: hidden; background: var(--paper); }
+.garden-main { height: 224px; margin: 20px -10px 30px; mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 18px), transparent); }
+.flower-garden canvas { touch-action: pan-y !important; }
+.garden-fallback { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: .92; }
+.flower-garden[data-state='live'] .garden-fallback { visibility: hidden; }
+.garden-margin { position: fixed; top: 0; width: min(180px, calc((100vw - 850px) / 2)); height: min(100svh, 960px); mask-image: linear-gradient(to right, transparent, #000 24%, #000 76%, transparent); }
+.garden-left { left: 2vw; }
+.garden-right { right: 2vw; }
+.garden-margin .garden-fallback { object-fit: cover; opacity: .45; }
+.content-section { margin-bottom: 44px; scroll-margin-top: 30px; }
+.entry-list, .reading-list { list-style: none; padding: 0; margin: 0; }
+.entry-list li { margin: 0; }
+.entry { display: flex; align-items: baseline; gap: 24px; padding: 7px 0; text-decoration: none; }
+.entry-title { flex: 0 0 170px; font-size: 15px; }
+.description { font-size: 13px; color: var(--muted); }
+.entry:hover .entry-title, .note-list a:hover, .reading-list a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.section-description { margin: -10px 0 14px; font-size: 12px; color: var(--muted); }
+.note-list a, .reading-list a { display: inline-block; padding: 5px 0; font-size: 14px; text-decoration: none; }
+.more-links { margin-top: 10px; }
+.more-links summary { width: fit-content; min-height: 28px; cursor: pointer; font-size: 12px; color: var(--muted); }
+.more-links[open] summary { margin-bottom: 6px; }
+.site-footer { display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); padding-top: 16px; font-size: 11px; color: var(--muted); }
+.site-footer a { padding: 4px 0; text-decoration: none; }
+.margins { position: fixed; inset: 0; pointer-events: none; opacity: .17; overflow: hidden; }
+.margins svg { width: 100%; height: 100%; }
+.margin-botanical { stroke: var(--accent); stroke-width: 1; }
+.travel-section { margin-top: 52px; view-timeline-name: --diary; view-timeline-axis: block; }
+.roadside-scene { position: relative; margin: -10px 0 8px; }
+.roadside-drawing { display: block; width: 100%; height: auto; overflow: visible; }
+.mountain-ink { color: #899582; stroke: #899582; stroke-width: .7; }
+.field-ink { color: #869871; stroke: #869871; stroke-width: .8; }
+.shore-ink { color: #7c9fa6; stroke: #7c9fa6; stroke-width: .8; }
+.road-bed { stroke: #ddd8c3; stroke-width: 8; stroke-linecap: round; }
+.road-inner { stroke: var(--paper); stroke-width: 5; }
+.road-progress { stroke: #7a936c; stroke-width: 1.15; stroke-dasharray: 1; stroke-dashoffset: 0; stroke-linecap: round; }
+.road-seeds { fill: #d6b468; }
+.road-bicycle { color: var(--ink); offset-path: path('M24 166C88 166 70 111 145 114S190 204 274 163 300 62 389 96 458 153 515 118 560 56 614 76'); offset-distance: 5%; offset-anchor: 0px 0px; offset-rotate: auto; }
+.travel-trail { list-style: none; margin: 24px 0 0; padding: 0; }
+.travel-entry { position: relative; min-height: 100px; padding: 0 0 52px 68px; view-timeline-name: --chapter; }
+.travel-route { position: absolute; left: 0; top: 22px; width: 56px; height: 100%; pointer-events: none; }
+.route-line { stroke: #b9bd9f; stroke-width: 1.2; stroke-dasharray: 3 7; stroke-linecap: round; }
+.travel-waypoint { position: absolute; left: 14px; top: 8px; width: 28px; height: 28px; display: grid; place-items: center; color: var(--muted); }
+.waypoint-dot { position: absolute; width: 9px; height: 9px; border: 1px solid var(--accent); border-radius: 50%; background: var(--paper); }
+.travel-waypoint svg { position: relative; background: var(--paper); }
+.travel-entry:nth-child(3n + 2) .travel-waypoint { --accent: #ae7ebc; }
+.travel-entry:nth-child(3n) .travel-waypoint { --accent: #d39c38; }
+.diary-page { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 16px; padding-top: 8px; }
+.diary-date { position: sticky; top: 254px; align-self: start; margin-top: 5px; font: 10px/1.7 'IBM Plex Mono', monospace; color: var(--muted); }
+.diary-content { min-width: 0; }
+.diary-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; }
+.diary-heading > svg { flex-shrink: 0; align-self: start; margin-top: 3px; color: var(--accent); }
+.diary-heading h3 { margin: 0; font: 450 26px/1.15 'Newsreader Variable', Georgia, serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.travel-region { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+.diary-note { font-size: 14px; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
+.travel-photos { display: grid; grid-auto-flow: column; grid-auto-columns: 88%; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; scroll-margin-top: 254px; padding: 4px 3px 12px; margin: 0 -3px; }
+.travel-photos figure { margin: 0; scroll-snap-align: start; min-width: 0; }
+.travel-photos img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 3px; }
+.travel-photos figcaption { margin-top: 8px; font-size: 11px; color: var(--muted); }
+@keyframes road-ride { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@keyframes road-write { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes waypoint-grow { from { transform: scale(.65); } to { transform: scale(1); } }
+@supports (animation-timeline: view()) {
+  .has-travels .roadside-scene { position: sticky; top: 0; z-index: 2; background: var(--paper); }
+  .road-bicycle { animation: road-ride 1s linear both; animation-timeline: --diary; animation-range: contain 0% contain 100%; }
+  .road-progress { animation: road-write 1s linear both; animation-timeline: --diary; animation-range: contain 0% contain 100%; }
+  .travel-waypoint svg { animation: waypoint-grow 1s linear both; animation-timeline: --chapter; animation-range: entry 0% cover 35%; }
+}
+@media (max-width: 520px) {
+  .travel-entry { padding-left: 48px; padding-bottom: 38px; }
+  .diary-page { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .diary-date { position: static; }
+  .diary-heading h3 { font-size: 24px; }
+  .travel-waypoint { top: 6px; }
+  .travel-route { top: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .has-travels .roadside-scene { position: relative; }
+  .diary-date { position: static; }
+  .road-bicycle { animation: none !important; offset-distance: 48%; }
+  .road-progress, .travel-waypoint svg { animation: none !important; }
+}
+.note-page h1 { margin: 20px 0; font-size: 40px; }
+.back-link { display: inline-block; padding: 5px 0; font-size: 13px; }
+.eyebrow { font: 10px/1.5 'IBM Plex Mono', monospace; color: var(--muted); margin: 20px 0 0; }
+.agent-notice { border-left: 2px solid var(--accent); padding: 4px 0 4px 18px; margin-bottom: 40px; font-size: 13px; }
+.agent-notice p { margin: 5px 0 0; color: var(--muted); }
+.note-body { font-size: 15px; overflow-wrap: anywhere; }
+.note-body h2 { margin: 38px 0 18px; font-size: 27px; }
+.note-body h3 { font-size: 17px; margin: 26px 0 12px; }
+.note-body ul, .note-body ol { padding-left: 24px; }
+.note-body li { margin: 7px 0; }
+.note-body pre { overflow: auto; padding: 16px; background: #eae7dc; font-size: 12px; border-radius: 3px; }
+.note-body code { font-family: 'IBM Plex Mono', monospace; font-size: .85em; }
+.note-body blockquote { margin-left: 0; border-left: 2px solid var(--line); padding-left: 20px; }
+.note-body table { display: block; overflow: auto; border-collapse: collapse; }
+.note-body td, .note-body th { padding: 8px; border: 1px solid var(--line); }
+.note-body img { max-width: 100%; height: auto; }
+.note-page { margin-bottom: 60px; }
+.not-found { padding-bottom: 100px; }
+.not-found h1 { margin-top: 20px; }
+@media (max-width: 1040px) { .garden-margin, .margins { display: none; } }
+@media (max-width: 720px) {
+  .site-shell { margin: 0 24px; padding-top: 24px; }
+  .site-header { margin-bottom: 46px; }
+  h1 { font-size: 38px; }
+  .entry { gap: 16px; }
+  .entry-title { flex-basis: 144px; font-size: 14px; }
+  .description { font-size: 12px; }
+  .garden-main { margin-top: 12px; height: 204px; }
+  .content-section { margin-bottom: 36px; }
+  .note-page h1 { font-size: 34px; }
+}
+@media (max-width: 380px) {
+  .entry { display: block; padding: 8px 0; }
+  .entry-title, .description { display: block; }
+  .description { margin-top: 1px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }

@@ -1,0 +1,14 @@
+[
+  {
+    "slug": "tv",
+    "title": "making an android tv less annoying",
+    "description": "Remote buttons, Google voice search, reversible channel filters and consent-first phone installers.",
+    "topic": "Android TV"
+  },
+  {
+    "slug": "qin",
+    "title": "locking down a qin f21 pro",
+    "description": "Auditing and hardening a keypad Android phone over ADB, without root.",
+    "topic": "Qin F21 Pro"
+  }
+]

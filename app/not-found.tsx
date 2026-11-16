@@ -1,12 +1,3 @@
 export default function NotFound() {
-  return (
-    <section>
-      <h1 className="font-medium text-2xl mb-8 tracking-tighter">
-        Oh no! This page doesn't exist.
-      </h1>
-      <p>
-        If you expected to see something here, let me know (hey@akshat.dev).
-      </p>
-    </section>
-  );
+  return <section className="not-found"><p className="eyebrow">off the beaten path / 404</p><h1>nothing growing here. yet.</h1><p>This page isn't here.</p><a className="back-link" href="/">← back home</a></section>;
 }

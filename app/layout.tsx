@@ -1,65 +1,32 @@
-import './global.css';
 import type { Metadata } from 'next';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
+import '@fontsource-variable/dm-sans';
+import '@fontsource-variable/newsreader';
+import '@fontsource/ibm-plex-mono/latin-400.css';
+import './globals.css';
+import FlowerGarden from '@/components/FlowerGarden';
+import { Margins } from '@/components/Landscape';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://akshat.dev'),
-  title: {
-    default: 'Akshat Agarwal',
-    template: '%s | Akshat Agarwal',
-  },
-  description: 'Builder',
-  openGraph: {
-    title: 'Akshat Agarwal',
-    description: 'Builder',
-    url: 'https://akshat.dev',
-    siteName: 'Akshat Agarwal',
-    locale: 'en_US',
-    type: 'website',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  twitter: {
-    title: 'Akshat Agarwal',
-    card: 'summary_large_image',
-  },
-  verification: {
-    google: 'eZSdmzAXlLkKhNJzfgwDqWORghxnJ8qR9_CHdAh5-xw',
-    yandex: '14d2e73487fa6c71',
-  },
+  title: { default: 'Akshat', template: '%s — Akshat' },
+  description: 'I use this website as a dumping ground for some of my side projects.',
+  openGraph: { type: 'website', siteName: 'akshat.dev' },
+  twitter: { card: 'summary' },
+  icons: { icon: '/favicon.svg' },
 };
 
-const cx = (...classes) => classes.filter(Boolean).join(' ');
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html
-      lang="en"
-      className={cx(
-        'text-black bg-white dark:text-white dark:bg-[#111010]',
-        GeistSans.variable,
-        GeistMono.variable,
-      )}
-    >
-      <body className="antialiased max-w-2xl mb-40 flex flex-col md:flex-row mx-4 mt-8 lg:mx-auto">
-        <main className="flex-auto min-w-0 mt-6 flex flex-col px-2 md:px-0">
-          {children}
-        </main>
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return <html lang="en" data-appearance="light">
+    <body>
+      <a className="skip-link" href="#main">Skip to content</a>
+      <Margins />
+      <FlowerGarden side="left" />
+      <FlowerGarden side="right" />
+      <div className="site-shell">
+        <header className="site-header"><a className="site-brand" href="/" aria-label="Akshat home"><span className="brand-seed" aria-hidden="true" />akshat.dev</a></header>
+        <main id="main" data-content>{children}</main>
+        <footer className="site-footer"><a href="https://github.com/akshatagarwl/akshat.dev" target="_blank" rel="noopener noreferrer">source ↗</a><a href="https://github.com/VedSoni-dev/seedbed" target="_blank" rel="noopener noreferrer">garden by seedbed ↗</a></footer>
+      </div>
+    </body>
+  </html>;
 }

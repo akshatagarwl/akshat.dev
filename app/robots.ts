@@ -1,13 +1,5 @@
+import type { MetadataRoute } from 'next';
 export const dynamic = 'force-static';
-
-export default function robots() {
-  return {
-    rules: [
-      {
-        userAgent: '*',
-      },
-    ],
-    sitemap: 'https://akshat.dev/sitemap.xml',
-    host: 'https://akshat.dev',
-  };
+export default function robots(): MetadataRoute.Robots {
+  return { rules: { userAgent: '*', allow: '/' }, sitemap: 'https://akshat.dev/sitemap.xml' };
 }
