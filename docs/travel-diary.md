@@ -64,6 +64,16 @@ High-quality local videos can exceed Cloudflare's 25MiB static-file cap. The loo
 
 Do not add fake/empty caption tracks. Review the full clip, audio and any necessary captions/transcript before publication; a local player is not a claim of caption-complete accessibility.
 
+## Full-resolution copies and private object storage
+
+`import-travel-photo.mjs` also creates a full-resolution lossless WebP, retaining the colour profile but omitting EXIF/IPTC/XMP. HEIC is decoded locally with macOS `sips`; lossless describes the resulting pixels, not a byte-identical HEIC/JPEG or preserved HDR gain map. Responsive images remain smaller lossy previews.
+
+`node scripts/import-travel-video-original.mjs /path/to/video.mp4 slug` remuxes compatible H.264/HEVC and AAC packets without re-encoding, strips container metadata/telemetry, and compares encoded audio/video hashes. It preserves orientation and codec colour information. The player uses a separate H.264 preview, never an optimistic HEVC `<source>`: Chromium can accept HEVC audio while displaying no video. Original-quality sanitized copies remain native download links. HDR preview conversion uses macOS VideoToolbox to BT.709 with explicit orientation; visual/audio review remains required. Previews keep the full duration and source frame rate, with a 1080p bounding box; portrait video is correspondingly narrower.
+
+`TRAVEL_R2_BUCKET=<private-bucket> bun scripts/sync-travel-r2.ts --upload` uploads only explicitly staged sanitized media using the existing `cf` login. Without `--upload` it plans locally. `--images-only` defers videos. It refuses CI and publicly accessible bucket domains, uses content-addressed keys, verifies size/ETag, and writes an ignored per-file manifest. Upload failures are recorded and return a failing exit status; other files still proceed. It never changes credentials, domains or deployment configuration. Files over the conservative single-PUT budget are marked `needs-s3-multipart`; this script does **not** implement multipart. Completing those requires existing S3 credentials with **Object Read & Write scoped only to the private bucket**, supplied securely—not committed or printed. Do not create/rotate credentials without approval.
+
+Clusters use a native MapLibre popup with dated place choices, so expansion cannot strand distant members outside a narrow viewport. Choosing a place uses the library camera and normal photo/video popup. Track fitting uses absolute library padding rather than accumulating the selected-stop padding.
+
 ## Review and publication
 
 Review visible privacy details, exact dates, place names, approximate centres and captions. A gap between photographs is not an itinerary or a route. Move only approved sanitized derivatives to `public/travels/<trip-id>/`, then add reviewed records to `data/trips.json` with non-preview paths and no draft flag.
