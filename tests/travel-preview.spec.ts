@@ -21,45 +21,57 @@ test('private Taiwan gallery and diary use real, local photos without external r
   await expect(page.locator('.map-stop')).toHaveCount(2);
   await expect(page.locator('.trip-map path')).toHaveCount(2);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'three');
+  await expect(page.locator('.trip-map-stage > canvas')).toBeVisible();
+  const stage = (await page.locator('.trip-map-stage').boundingBox())!;
+  expect(stage.height).toBeGreaterThan(page.viewportSize()!.height / 2);
+  expect((await page.locator('.trip-pages').boundingBox())!.y).toBeGreaterThan(stage.y + stage.height);
   await expect(page.getByRole('button', { name: 'Zoom in', exact: true })).toBeEnabled();
   expect(external).toEqual([]); expect(errors).toEqual([]);
 });
 
-test('pan and zoom are bounded, fit resets, and wheel scrolling is never captured', async ({ page }) => {
+test('Three.js orbit and zoom are bounded, fit resets, and wheel scrolling is never captured', async ({ page }) => {
   await page.goto(trip);
+  const stage = page.locator('.trip-map-stage');
   const zoom = page.getByRole('button', { name: 'Zoom in', exact: true });
   for (let i = 0; i < 6; i++) await zoom.click();
   await expect(zoom).toBeDisabled();
-  await expect(page.locator('.trip-map-drawing')).toHaveAttribute('data-zoom', '6.00');
+  await expect(stage).toHaveAttribute('data-zoom', '6.00');
   await page.getByRole('button', { name: 'Fit Taiwan' }).click();
-  await expect(page.locator('.trip-map-drawing')).toHaveAttribute('data-zoom', '1.00');
+  await expect(stage).toHaveAttribute('data-zoom', '1.00');
   await expect(page.getByRole('button', { name: 'Zoom out', exact: true })).toBeDisabled();
-  await zoom.click();
-  const previousTransform = await page.locator('.map-geography').getAttribute('transform');
-  const box = (await page.locator('.trip-map-drawing').boundingBox())!;
-  await page.mouse.move(box.x + 20, box.y + 20); await page.mouse.down();
-  await page.mouse.move(box.x + 50, box.y + 50, { steps: 5 }); await page.mouse.up();
-  await expect(page.locator('.map-geography')).not.toHaveAttribute('transform', previousTransform!);
+  const beforeCamera = await stage.getAttribute('data-camera');
+  await stage.focus(); await page.keyboard.press('Shift+ArrowRight');
+  await expect(stage).not.toHaveAttribute('data-camera', beforeCamera!);
+  await page.keyboard.press('ArrowDown');
   await page.getByRole('button', { name: 'Fit Taiwan' }).click();
-  await page.locator('.trip-map-drawing').hover();
+  await expect(stage).toHaveAttribute('data-camera', beforeCamera!);
+  const box = (await stage.boundingBox())!;
+  await page.mouse.move(box.x + box.width * .5, box.y + box.height * .55); await page.mouse.down();
+  await page.mouse.move(box.x + box.width * .5 + 60, box.y + box.height * .55 + 30, { steps: 5 }); await page.mouse.up();
+  await expect(stage).not.toHaveAttribute('data-camera', beforeCamera!);
+  await page.getByRole('button', { name: 'Fit Taiwan' }).click();
+  await expect(stage).toHaveAttribute('data-camera', beforeCamera!);
+  await stage.hover();
   const before = await page.evaluate(() => scrollY);
   await page.mouse.wheel(0, 400);
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before);
-  await expect(page.locator('.trip-map-drawing')).toHaveAttribute('data-zoom', '1.00');
+  await expect(stage).toHaveAttribute('data-zoom', '1.00');
 });
 
 test('touch over the map scrolls the document without zooming', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
   const page = await context.newPage();
   await page.goto('http://127.0.0.1:4323' + trip);
-  const box = (await page.locator('.trip-map-drawing').boundingBox())!;
+  await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'three');
+  const box = (await page.locator('.trip-map-stage').boundingBox())!;
   const x = box.x + box.width / 2, y = box.y + box.height / 2;
   const session = await context.newCDPSession(page);
   await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
   for (let i = 1; i <= 8; i++) await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y - i * 20 }] });
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(50);
-  await expect(page.locator('.trip-map-drawing')).toHaveAttribute('data-zoom', '1.00');
+  await expect(page.locator('.trip-map-stage')).toHaveAttribute('data-zoom', '1.00');
   await context.close();
 });
 
@@ -70,8 +82,8 @@ test('reading forward and back changes the active map place without hiding prose
   await page.locator('#stop-hualien-area').scrollIntoViewIfNeeded();
   await expect(page.locator('.map-stop-list [aria-current="location"]')).toHaveText('Hualien area');
   await page.locator('.map-stop-list a').filter({ hasText: 'Jiufen' }).click();
-  await expect(page).toHaveURL(/#stop-jiufen$/);
-  await expect(page.getByRole('heading', { name: 'Jiufen', exact: true })).toBeInViewport();
+  await expect(page.locator('.map-place-card h2')).toHaveText('Jiufen');
+  await expect(page).toHaveURL(new RegExp(`${trip}$`));
 });
 
 test('photos open in a native modal with keyboard navigation, Escape and focus return', async ({ page }) => {
@@ -109,6 +121,36 @@ test('photos open in a native modal with keyboard navigation, Escape and focus r
   await expect(photo).toBeFocused();
 });
 
+test('map markers select photos without leaving the map, and the renderer sleeps when idle', async ({ page }) => {
+  await page.goto(trip);
+  await page.getByRole('button', { name: 'Explore Jiufen', exact: true }).click();
+  await expect(page.locator('.map-place-card h2')).toHaveText('Jiufen');
+  await expect(page).toHaveURL(new RegExp(`${trip}$`));
+  const stage = page.locator('.trip-map-stage');
+  await expect(stage).toHaveAttribute('data-renders', /[1-9]/);
+  await page.waitForTimeout(150);
+  const frames = await stage.getAttribute('data-renders');
+  await page.waitForTimeout(250);
+  expect(await stage.getAttribute('data-renders')).toBe(frames);
+  await page.getByRole('button', { name: 'View photo', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('heading')).toHaveText('Jiufen');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'View photo', exact: true })).toBeFocused();
+});
+
+test('WebGL context loss releases the canvas and retains the SVG and photographs', async ({ page }) => {
+  await page.goto(trip);
+  await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'three');
+  await page.locator('.trip-map-stage > canvas').evaluate(canvas => (canvas as HTMLCanvasElement).getContext('webgl2')!.getExtension('WEBGL_lose_context')!.loseContext());
+  await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'svg');
+  await expect(page.locator('.trip-map-stage > canvas')).toHaveCount(0);
+  await expect(page.locator('.trip-map-drawing')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Zoom in', exact: true })).toBeDisabled();
+  await page.locator('.map-stop-list a').last().click();
+  await expect(page).toHaveURL(/#stop-jiufen$/);
+  await expect(page.locator('#heading-jiufen')).toBeInViewport();
+});
+
 test('unsupported native dialogs retain the original image link', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { value: undefined }));
   await page.goto(trip);
@@ -132,12 +174,12 @@ test('no JavaScript retains the complete gallery, map links and image fallback',
 test('reduced motion removes sticky scenery and automatic camera movement', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(trip);
-  await expect(page.locator('.trip-map')).toHaveCSS('position', 'relative');
+  await expect(page.locator('.trip-map')).not.toHaveCSS('position', 'sticky');
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
-  const before = await page.locator('.map-geography').getAttribute('transform');
+  const before = await page.locator('.trip-map-stage').getAttribute('data-camera');
   await page.locator('#stop-jiufen').scrollIntoViewIfNeeded();
   await expect(page.locator('.map-stop-list [aria-current="location"]')).toHaveText('Jiufen');
-  expect(await page.locator('.map-geography').getAttribute('transform')).toBe(before);
+  expect(await page.locator('.trip-map-stage').getAttribute('data-camera')).toBe(before);
 });
 
 test('private export is isolated from production and publication is refused', async () => {

@@ -1,14 +1,15 @@
 # Travel photo diaries
 
-Current direction: **Polarsteps-like, trip-first, light and quiet**. A photo-led trip cover opens a regional map beside ordered photo stops. Ordinary reading updates the map's highlighted place; photos remain visible rather than hidden in cards. Optional owner-written notes belong next to the photos. Never invent journeys, dates, diary prose or photographs.
+Current direction: **map-first, Three.js, light and quiet**. The map is the main highlight on both the homepage trip preview and the wide trip page. Select photo markers to explore a place and open its photographs; the full readable journal follows below. Optional owner-written notes belong next to the photos. Never invent journeys, dates, diary prose or photographs.
 
 ## Interaction
 
-- `/travels` collects trip covers; `/travels/[trip]` shows the diary. The homepage gets a cover only once real, reviewed content exists.
-- Desktop: a sticky regional map beside full-composition photographs. Mobile: a nonsticky map above the photos, so it cannot obstruct reading/focus.
+- `/travels` collects map-led previews; `/travels/[trip]` opens the large map. The homepage gets a map only once real, reviewed content exists.
+- The map occupies most of the first viewport. A small selected-place card and thumbnail markers lead into the native photo viewer. Full-composition photographs remain below, readable without opening the modal. No sticky panels cover reading/focus on mobile or desktop.
 - Map points are approximate place centres, **not captured GPS locations**. No route is drawn without an actual, owner-approved route. Stop numbers are ordering, not invented travel days.
-- D3 handles geography and bounded mouse pan/zoom. Native zoom/fit buttons work with keyboard and touch. Wheel and touch gestures scroll the page; browser pinch zoom is preserved.
-- IntersectionObserver highlights the stop being read; there is no production scroll listener, scroll hijacking or perpetual animation loop. Reduced motion removes map stickiness and automatic recentering. Manual zoom is instantaneous.
+- Three.js 0.187.0, official OrbitControls and SVGLoader provide the WebGL scene. D3 only projects geography. Drag to orbit; right-drag to pan. Focus the map: arrows pan and Shift-arrows orbit. Native zoom/fit buttons work with keyboard and touch. Wheel/touch scroll the document; browser pinch zoom is preserved.
+- Raised land is a **cartographic silhouette, not actual terrain/elevation**. No invented mountains or tracks. The camera never automatically flies/rotates. IntersectionObserver can highlight the journal stop, but cannot move the camera.
+- Render only on changes/resize, never in an idle animation loop. Cap pixel ratio at 2. Dispose the renderer/context, controls/key listeners, geometry/materials, ResizeObserver and scheduled frame on unmount or WebGL loss. Losing WebGL restores the SVG and native photo links. Reduced motion stays static until explicit interaction.
 - Photo links progressively enhance into a native modal: previous/next, arrow keys, Escape and native focus return. Without JS they open the image normally. All photographs, places and captions remain readable without JS/Canvas.
 - The first prototype uses a self-hosted SVG Taiwan basemap, not remote tiles, geolocation, account services or map APIs. Other regions need an appropriate basemap before authoring trips there.
 
@@ -52,13 +53,14 @@ The earlier abstract roadside diary remains as a legacy fallback for `data/trave
 
 ## Map provenance
 
-Natural Earth 1:50m admin-0 country data is public domain. Source revision: `ca96624a56bd078437bca8184e78163e5039ad19`. The checked-in SVG path data is only about 2.2KB; no global GeoJSON payload reaches the browser.
+Natural Earth 1:50m admin-0 country data is public domain. Source revision: `ca96624a56bd078437bca8184e78163e5039ad19`. The checked-in projected paths are about 27KB, including a wider surrounding coastline so the 3D scene does not show artificial country cutoffs. No global GeoJSON payload reaches the browser.
 
 Regenerate after downloading the pinned source into `.generated/travel-map/countries.geojson`:
 
 ```sh
+mkdir -p .generated/travel-map
 curl --fail --location https://raw.githubusercontent.com/nvkelso/natural-earth-vector/ca96624a56bd078437bca8184e78163e5039ad19/geojson/ne_50m_admin_0_countries.geojson --output .generated/travel-map/countries.geojson
 bun scripts/render-taiwan-map.ts
 ```
 
-Projection and interaction: pinned D3 modules, ISC licenses retained in `public/licenses/d3-*.txt`. Natural Earth notice: `public/licenses/natural-earth.txt`. Seedbed/Lucide provenance remains intact. Travel photographs are owner-supplied personal content, not relicensed as part of the site's code or the public-domain map data.
+Projection: pinned D3 geography, ISC notices retained in `public/licenses/d3-*.txt`. Rendering/interaction: pinned Three.js with its official MIT OrbitControls/SVGLoader, notice in `public/licenses/three.txt`. Natural Earth notice: `public/licenses/natural-earth.txt`. Seedbed/Lucide provenance remains intact. Travel photographs are owner-supplied personal content, not relicensed as part of the site's code or the public-domain map data.

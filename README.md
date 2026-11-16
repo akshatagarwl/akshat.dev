@@ -12,9 +12,9 @@ Reduced motion, absent Canvas and no JavaScript show local flower images rendere
 
 ## Travel diaries
 
-A Polarsteps-like gallery opens into a regional map beside full-size photo stops. Normal reading highlights the current place; D3 provides bounded pan/zoom, with no wheel/touch scroll hijacking. A native modal supports photo navigation, Escape and focus return. Photos remain readable without JavaScript. Reduced motion removes map pinning and automatic recentering; mobile keeps the map nonsticky.
+**Map first:** Three.js 0.187.0 makes a large, orbitable regional map the highlight of both the homepage preview and trip page. Select photo markers, then open the pictures in the existing native viewer. The full photo journal is below the map. Official OrbitControls provide bounded mouse/keyboard orbit/pan; zoom/fit buttons remain native. Wheel/touch gestures scroll normally. Rendering is on demand, with no idle animation loop or automatic camera rides. SVG, no-JS and WebGL-loss fallbacks preserve the places and photographs.
 
-The first local prototype uses Taiwan, a self-hosted public-domain Natural Earth basemap and owner-supplied photos. No remote tiles, map accounts, invented routes or diary prose. Photo derivatives are metadata-free, but visible people/private details still need manual review.
+The first local prototype uses Taiwan, a self-hosted public-domain Natural Earth basemap (raised as a stylistic silhouette, not real elevation) and owner-supplied photos. No remote tiles, map accounts, invented routes or diary prose. Photo derivatives are metadata-free, but visible people/private details still need manual review.
 
 Approved records go in initially empty `data/trips.json`. Until then, the gallery and travel routes are absent from production. Private drafts/media stay ignored and export only to `.generated/travel-export`, never production `out/`. See [`docs/travel-diary.md`](docs/travel-diary.md) for the local preview and review/publication workflow. The older abstract roadside diary remains a tested legacy fallback.
 

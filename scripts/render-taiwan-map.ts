@@ -7,6 +7,7 @@ const projection = geoMercator().center([121, 23.7]).scale(3800).translate([200,
 const path = geoPath(projection).digits(2);
 const selected = source.features.filter((f: { properties: { ADMIN: string } }) => ['Taiwan', 'China', 'Japan', 'Philippines'].includes(f.properties.ADMIN));
 await writeFile('data/taiwan-basemap.json', JSON.stringify({
+  sceneNeighbours: selected.filter((f: { properties: { ADMIN: string } }) => f.properties.ADMIN !== 'Taiwan').map((f: GeoPermissibleObjects) => geoPath(geoMercator().center([121, 23.7]).scale(3800).translate([200, 210]).clipExtent([[-650, -650], [1000, 1100]])).digits(2)(f)).join(' '),
   taiwan: path(selected.find((f: { properties: { ADMIN: string } }) => f.properties.ADMIN === 'Taiwan') as GeoPermissibleObjects),
   neighbours: selected.filter((f: { properties: { ADMIN: string } }) => f.properties.ADMIN !== 'Taiwan').map((f: GeoPermissibleObjects) => path(f)).join(' '),
 }) + '\n');

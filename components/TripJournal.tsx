@@ -36,11 +36,11 @@ export function TripJournal({ trip }: { trip: Trip }) {
       <a className="back-link" href="/travels">all travels</a>
       {trip.draft && <p className="trip-draft">local draft · not published</p>}
       <h1>{trip.title}</h1>
-      <p className="trip-dateline"><time dateTime={trip.month}>{travelDate(trip.month)}</time><span>photo diary</span></p>
+      <p className="trip-dateline"><time dateTime={trip.month}>{travelDate(trip.month)}</time><span>explore the photographs</span></p>
     </header>
     <div className="trip-layout">
-      <TripMap stops={trip.stops} active={active} onSelect={setActive} />
-      <div className="trip-pages">{trip.stops.map((stop, index) => <section key={stop.id} id={`stop-${stop.id}`} data-trip-stop={stop.id} className="trip-stop" aria-labelledby={`heading-${stop.id}`}>
+      <TripMap stops={trip.stops} active={active} onSelect={setActive} onOpenPhoto={id => { const first = trip.stops.find(s => s.id === id)!.photos[0].id; setPhotoIndex(photos.findIndex(p => p.photo.id === first)); }} />
+      <div className="trip-pages"><h2 className="trip-journal-title">the photo journal</h2>{trip.stops.map((stop, index) => <section key={stop.id} id={`stop-${stop.id}`} data-trip-stop={stop.id} className="trip-stop" aria-labelledby={`heading-${stop.id}`}>
         <header className="trip-stop-heading"><span className="trip-stop-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><h2 id={`heading-${stop.id}`}>{stop.place}</h2></header>
         {trip.draft && stop.locationNote && <p className="trip-location-note">{stop.locationNote}</p>}
         {stop.note && <p className="trip-stop-note">{stop.note}</p>}
