@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { parseTrips, photoSrcSet, tripDate } from '../lib/trips';
+import { parseTrips, photoSrcSet, tripDate, videoDuration } from '../lib/trips';
 import { TravelGallery } from '../components/TravelGallery';
 
 const image = { id: 'sample', src: '/travels/fixture/sample-1800.webp', alt: 'Clearly labelled test photograph.', width: 1800, height: 1800 };
@@ -20,6 +20,15 @@ for (const src of ['https://example.com/a.webp', '/travels/../private.webp', '/t
 assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], photos: [{ ...image, width: -1 }] }] }));
 assert.throws(() => parseTrips([valid, valid]));
 assert.throws(() => parse({ ...valid, stops: [valid.stops[0], { ...valid.stops[0], id: 'other' }] }));
+const video = { id: 'clip', src: '/travels/fixture/clip.mp4', poster: '/travels/fixture/clip-poster.webp', title: 'Factual test clip.', width: 1280, height: 720, duration: 173.95 };
+const withVideo = { ...valid, stops: [...valid.stops, { id: 'video-stop', place: 'Test region', photos: [], videos: [video] }] };
+assert.equal(parse(withVideo)[0].stops[1].videos?.[0].duration, 173.95);
+assert.equal(videoDuration(video.duration), '2:54');
+for (const src of ['https://example.com/clip.mp4', '/travels/../clip.mp4', '/travels/a/clipXmp4', '/travels/a/clip.mp4?gps=1']) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, src }] }] }));
+for (const duration of [0, -1, Infinity, NaN]) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, duration }] }] }));
+assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, id: image.id }] }] }));
+assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, captions: 'https://example.com/captions.vtt' }] }] }));
+assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], photos: [], videos: [] }] }));
 assert.match(photoSrcSet(image)!, /sample-640.webp 640w/);
 const html = renderToStaticMarkup(<TravelGallery trips={parse(valid)} />);
 assert.ok(html.includes('&lt;script&gt;') && !html.includes('<script>'));

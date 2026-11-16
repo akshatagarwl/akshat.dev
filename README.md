@@ -12,7 +12,7 @@ Reduced motion, absent Canvas and no JavaScript show local flower images rendere
 
 ## Travel maps
 
-**Only the map:** reuse **react-map-gl 8.1.3 + MapLibre 6.18.0**, with Protomaps' existing light basemap. No custom Three.js scene, hand-drawn map, separate journal or sidebar. Photo pins and standard popups show factual dates and open the native image viewer. Standard controls provide zoom, pan, keyboard navigation and fit; wheel/one-finger touch still scroll the page. There are no automatic camera rides or site-owned animation loops.
+**Only the map:** reuse **react-map-gl 8.1.3 + MapLibre 6.18.0**, with Protomaps' existing light basemap. No custom Three.js scene, hand-drawn map, separate journal or sidebar. Photo/video pins and standard popups show factual dates and open native media dialogs. Videos are click-to-play with browser controls; closing stops playback. Nothing autoplays; `preload="none"` asks the browser to defer downloading the clip until playback. Standard controls provide zoom, pan, keyboard navigation and fit; wheel/one-finger touch still scroll the page. There are no automatic camera rides or site-owned animation loops.
 
 The first local prototype uses Taiwan and owner-supplied photographs. Its 3.8MB regional PMTiles archive, fonts, sprites and worker are self-hosted: no visitor requests to map vendors, tokens or map accounts. A generic map-renderer poster and dated image links work without JS/map loading. No invented routes, dates or diary prose. Metadata-free derivatives still need manual review for visible people/private details.
 

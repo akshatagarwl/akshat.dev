@@ -6,7 +6,7 @@
 
 - Frozen dependency install, content/route type generation, TypeScript, production build, Seedbed/legacy fixture/trip validation tests, including real date-only calendar validation.
 - **28 original desktop/mobile Chromium tests** preserve all existing projects, reading links, notes, flowers, metadata, redirects, headers and 404 behavior.
-- **24 private-preview desktop/mobile Chromium tests** exercise actual MapLibre rendering, standard controls/popups, factual date labels, keyboard pan, fit, native wheel and one-finger touch scrolling, image navigation and the native modal.
+- **28 private-preview desktop/mobile Chromium tests** exercise actual MapLibre rendering, standard controls/popups, factual date labels, keyboard pan, fit, native wheel and one-finger touch scrolling, image navigation and the native modal.
 - Production dependency audit: no reported vulnerabilities. Normal publication guard passes; private exports are refused.
 
 ## Map only, no custom map engine
@@ -31,4 +31,6 @@ All six photo derivatives remain free of EXIF/IPTC/XMP. Visible bystanders/priva
 
 ## Limits
 
-No physical phone, Safari/WebKit, screen-reader user testing, GPU/battery profiling, universal frame-rate guarantee, Lighthouse or production rollout verification. Mobile checks are Chromium device emulation, not physical iOS. The video original is still unavailable and is not represented as playable content.
+No physical phone, Safari/WebKit, screen-reader user testing, GPU/battery profiling, universal frame-rate guarantee, Lighthouse or production rollout verification. Mobile checks are Chromium device emulation, not physical iOS. The owner-requested video was exported through Photos without modifying its original. Its full-length 720p H.264/AAC derivative is about 20MB, with GPS, exact timestamps, timecode and GoPro telemetry/data tracks removed. Standard codec/container fields remain. Real muted playback decodes frames in desktop/mobile-emulated Chromium; there is no MP4 request before deliberate playback. Closing/Escape pauses and removes the player and returns focus. The poster and records/media remain ignored and unpublished. The new pin uses a provisional, approximate coastal-region centre, not captured GPS.
+
+Video audio, captions/transcript, visible bystanders and the complete clip still need owner review before publication. The native player preserves source audio and does not autoplay. Existing automated accessibility checks cover map/photo UI, not a claim of caption-complete video accessibility. No empty/fabricated caption track has been added.

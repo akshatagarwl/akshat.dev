@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Marker, NavigationControl, Popup, ScaleControl, type MapRef } from 'react-map-gl/maplibre';
 import * as maplibre from 'maplibre-gl';
 import { FileSource, PMTiles, Protocol } from 'pmtiles';
-import type { Trip, TripPhoto } from '@/lib/trips';
-import { tripDate } from '@/lib/trips';
+import type { Trip, TripPhoto, TripVideo } from '@/lib/trips';
+import { tripDate, videoDuration } from '@/lib/trips';
 import style from '@/data/map-style.json';
 
 // Existing renderer, React components, worker, PMTiles reader and Protomaps cartography.
@@ -23,7 +23,7 @@ function loadArchive() {
   });
 }
 
-export default function MapLibreTripMap({ trip, onPhoto, onReady, onFailure }: { trip: Trip; onPhoto: (photo: TripPhoto) => void; onReady: () => void; onFailure: () => void }) {
+export default function MapLibreTripMap({ trip, onPhoto, onVideo, onReady, onFailure }: { trip: Trip; onPhoto: (photo: TripPhoto) => void; onVideo: (video: TripVideo) => void; onReady: () => void; onFailure: () => void }) {
   const ref = useRef<MapRef>(null);
   const [archiveReady, setArchiveReady] = useState(false);
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function MapLibreTripMap({ trip, onPhoto, onReady, onFailure }: {
     <button type="button" className="map-fit" onClick={fit}>Fit Taiwan</button>
     {trip.stops.filter(s => s.location).map(s => <Marker key={s.id} longitude={s.location![0]} latitude={s.location![1]} anchor="bottom">
       <button type="button" className="map-photo-marker" aria-label={`Explore ${s.place}, ${tripDate(s.date ?? trip.month)}`} aria-pressed={selected === s.id} onClick={event => { event.stopPropagation(); select(s.id); }}>
-        <img src={s.photos[0].src.replace('-1800.webp', '-640.webp')} alt="" width="36" height="36" /><span>{s.place}<time dateTime={s.date ?? trip.month}>{tripDate(s.date ?? trip.month)}</time></span>
+        <img src={s.photos[0]?.src.replace('-1800.webp', '-640.webp') ?? s.videos![0].poster} alt="" width="36" height="36" /><span>{s.place}<time dateTime={s.date ?? trip.month}>{tripDate(s.date ?? trip.month)}</time>{s.videos?.length ? <small className="map-video-badge">video</small> : null}</span>
       </button>
     </Marker>)}
     {stop?.location && <Popup longitude={stop.location[0]} latitude={stop.location[1]} offset={12} closeOnClick={false} maxWidth="min(270px, calc((100vw - 64px) * .65))" onClose={() => select(null)}>
@@ -53,6 +53,9 @@ export default function MapLibreTripMap({ trip, onPhoto, onReady, onFailure }: {
         {trip.draft && stop.locationNote && <p className="map-location-note">{stop.locationNote}</p>}
         {stop.photos.map(photo => <a key={photo.id} href={photo.src} aria-label={`Open photo: ${photo.alt}`} onClick={event => { if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); onPhoto(photo); }}>
           <img src={photo.src.replace('-1800.webp', '-640.webp')} alt={photo.alt} width={photo.width} height={photo.height} />
+        </a>)}
+        {stop.videos?.map(video => <a className="map-video-link" key={video.id} href={video.src} aria-label={`Play video: ${video.title}`} onClick={event => { if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); onVideo(video); }}>
+          <img src={video.poster} alt={video.title} width={video.width} height={video.height} /><span>Play video · {videoDuration(video.duration)}</span>
         </a>)}
       </article>
     </Popup>}

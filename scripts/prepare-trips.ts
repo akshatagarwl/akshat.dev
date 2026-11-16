@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { parseTrips } from '../lib/trips';
 
 export async function prepareTrips() {
@@ -17,6 +17,16 @@ export async function prepareTrips() {
       const name = p.src.slice(prefix.length).replace('-1800.webp', '');
       await mkdir(`public${prefix}`, { recursive: true });
       for (const width of [640, 1280, 1800]) await cp(`.generated/travel-draft/media/${name}-${width}.webp`, `public${prefix}${name}-${width}.webp`);
+    }
+    for (const stop of trip.stops) for (const video of stop.videos ?? []) {
+      const prefix = `/travels/preview/${trip.id}/`;
+      for (const asset of [video.src, video.poster, ...(video.captions ? [video.captions] : [])]) {
+        if (!asset.startsWith(prefix) || !/^[a-z0-9-]+\.(mp4|webp|vtt)$/.test(asset.slice(prefix.length))) throw new Error('Preview videos need flat, local sanitized media paths.');
+        const source = `.generated/travel-draft/media/${asset.slice(prefix.length)}`;
+        if ((await stat(source)).size > 24 * 1024 * 1024) throw new Error('Preview media exceeds the static asset budget.');
+        await mkdir(`public${prefix}`, { recursive: true });
+        await cp(source, `public${asset}`);
+      }
     }
   }
   await mkdir('.generated', { recursive: true });

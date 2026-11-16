@@ -21,7 +21,7 @@ test('maintained MapLibre component is the only travel surface and dates are vis
   await expect(page.locator('.maplibregl-canvas')).toBeVisible();
   await expect(page.locator('.trip-pages, .trip-stop, .trip-masthead, .map-geography')).toHaveCount(0);
   await expect(page.locator('.map-caption > time')).toHaveText('Oct 2026');
-  await expect(page.locator('.map-photo-marker time')).toHaveText(['17 Oct 2026', '20 Oct 2026']);
+  await expect(page.locator('.map-photo-marker time')).toHaveText(['17 Oct 2026', '20 Oct 2026', '15 Oct 2026']);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   expect((await page.locator('.trip-map-stage').boundingBox())!.height).toBeGreaterThan(page.viewportSize()!.height / 2);
   expect(external).toEqual([]); expect(errors).toEqual([]); expect(failures).toEqual([]);
@@ -88,9 +88,10 @@ test('no JavaScript keeps the real map poster and dated native image links', asy
   const page = await context.newPage(); await page.goto('http://127.0.0.1:4323' + trip);
   await expect(page.locator('.map-poster')).toBeVisible();
   await expect.poll(() => page.locator('.map-poster').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(500);
-  await page.getByText('Photos and dates', { exact: true }).click();
-  await expect(page.locator('.map-static-photos time')).toHaveText(['17 Oct 2026', '20 Oct 2026']);
-  await page.locator('.map-static-photos a').last().click(); await expect(page).toHaveURL(/jiufen-1800\.webp$/);
+  await page.getByText('Media and dates', { exact: true }).click();
+  await expect(page.locator('.map-static-photos time')).toHaveText(['17 Oct 2026', '20 Oct 2026', '15 Oct 2026']);
+  await expect(page.locator('.map-static-photos a').last()).toHaveAttribute('href', /coast-ride\.mp4$/);
+  await page.locator('.map-static-photos a').nth(1).click(); await expect(page).toHaveURL(/jiufen-1800\.webp$/);
   await context.close();
 });
 
@@ -100,8 +101,8 @@ test('missing basemap falls back to the existing-renderer poster, not custom geo
   await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'fallback');
   await expect(page.locator('.map-poster')).toBeVisible();
   await expect(page.locator('.maplibregl-canvas')).toHaveCount(0);
-  await page.getByText('Photos and dates', { exact: true }).click();
-  await expect(page.locator('.map-static-photos a')).toHaveCount(2);
+  await page.getByText('Media and dates', { exact: true }).click();
+  await expect(page.locator('.map-static-photos a')).toHaveCount(3);
 });
 
 test('real WebGL context loss returns to the generic poster and native photo links', async ({ page }) => {
@@ -145,6 +146,46 @@ test('photo derivatives remain metadata-free', async ({ request }) => {
     const info = await sharp(await response.body()).metadata();
     expect(info.width).toBe(width); expect(info.exif).toBeUndefined(); expect(info.iptc).toBeUndefined(); expect(info.xmp).toBeUndefined();
   }
+});
+
+test('video is click-to-play, decodes real frames, and stops on close', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', request => { if (request.url().endsWith('.mp4')) requests.push(request.url()); });
+  await ready(page);
+  await page.getByRole('button', { name: 'Explore Taiwan east coast, 15 Oct 2026', exact: true }).click();
+  await expect(page.locator('.map-video-link')).toContainText('Play video · 2:54');
+  expect(requests).toEqual([]);
+  const link = page.getByRole('link', { name: /^Play video:/ });
+  await link.click();
+  const dialog = page.locator('.video-viewer'), video = dialog.locator('video');
+  await expect(dialog).toBeVisible(); await expect(dialog.locator('time')).toHaveText('15 Oct 2026');
+  await expect(video).toHaveAttribute('preload', 'none');
+  expect(await video.evaluate(v => (v as HTMLVideoElement).autoplay)).toBe(false);
+  expect(await video.evaluate(v => (v as HTMLVideoElement).paused)).toBe(true);
+  expect(requests).toEqual([]);
+  await video.evaluate(element => { (element as HTMLVideoElement).muted = true; });
+  await video.focus(); await page.keyboard.press('Space');
+  await expect.poll(() => video.evaluate(v => (v as HTMLVideoElement).currentTime)).toBeGreaterThan(0.3);
+  expect(await video.evaluate(v => (v as HTMLVideoElement).getVideoPlaybackQuality().totalVideoFrames)).toBeGreaterThan(0);
+  expect(await video.evaluate(v => (v as HTMLVideoElement).duration)).toBeGreaterThan(173);
+  const handle = await video.elementHandle();
+  await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible();
+  await expect(page.locator('video')).toHaveCount(0);
+  expect(await handle!.evaluate(v => (v as HTMLVideoElement).paused)).toBe(true);
+  await expect(link).toBeFocused();
+});
+
+test('video derivative strips GPS/device/timestamp/data tracks and fits static hosting', async () => {
+  const result = spawnSync('ffprobe', ['-v', 'error', '-show_format', '-show_streams', '-of', 'json', '.generated/travel-draft/media/coast-ride.mp4'], { encoding: 'utf8' });
+  expect(result.status).toBe(0);
+  const info = JSON.parse(result.stdout);
+  expect(info.streams.map((s: { codec_type: string }) => s.codec_type)).toEqual(['video', 'audio']);
+  const poster = await sharp('.generated/travel-draft/media/coast-ride-poster.webp').metadata();
+  expect(poster.exif).toBeUndefined(); expect(poster.iptc).toBeUndefined(); expect(poster.xmp).toBeUndefined();
+  expect(info.streams[0].codec_name).toBe('h264');
+  expect(Number(info.format.duration)).toBeGreaterThan(173);
+  expect(Number(info.format.size)).toBeLessThan(24 * 1024 * 1024);
+  expect(JSON.stringify([info.format.tags, ...info.streams.map((s: { tags: unknown }) => s.tags)])).not.toMatch(/location|creation_time|timecode|firmware|serial|gopro/i);
 });
 
 test('map and popup UI remain accessible and fit narrow screens', async ({ page }, info) => {

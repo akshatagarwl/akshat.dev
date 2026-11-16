@@ -27,6 +27,7 @@ Draft `.generated/travel-draft/trips.json` uses `Trip` in `lib/trips.ts`:
 - Trip: `id`, `title`, `month` (`YYYY-MM`), `draft: true`, `cover`, ordered `stops`.
 - Stop: `id`, `place`, `photos`, optional real `date` (`YYYY-MM-DD`), approximate `location: [longitude, latitude]`, optional `locationNote`/owner-written `note` retained as data. The current map-only UI does not invent/display a diary.
 - Photo: `id`, `src`, descriptive `alt`, pixel `width`/`height`, optional factual `caption`.
+- Optional stop `videos`: each needs `id`, local MP4 `src`, WebP `poster`, factual `title`, pixel `width`/`height`, duration in seconds, optional local VTT `captions`. A stop may have `photos: []` when it has videos. Video IDs share the trip media namespace.
 - Preview source: `/travels/preview/<trip-id>/<photo-slug>-1800.webp`.
 - Duplicate IDs, remote/traversing image paths, invalid months/calendar dates/dimensions/coordinates and a cover outside the trip fail validation.
 
@@ -36,6 +37,20 @@ bun run test:travel-preview  # separate port 4323; don't run alongside normal te
 ```
 
 Explicit `TRAVEL_PREVIEW=1` is noindex and refuses CI. Its export moves to `.generated/travel-export`, **never production `out/`**. Staging `public/travels/preview/` is ignored. The publication guard refuses preview/missing production exports. Normal builds remove preview staging and include only approved records. Never bypass the guard or upload `.generated/`.
+
+## Local video import
+
+Export only the requested item from Photos using its scripting export command; this may take time while Photos obtains the original. Never change library/iCloud settings, grant permissions or edit the source asset. Keep exported originals under ignored `.generated/travel-draft/video-original/`.
+
+```sh
+node scripts/import-travel-video.mjs /path/to/video.mp4 your-video-slug
+```
+
+Requires local ffmpeg/ffprobe. Produces a complete, untrimmed H.264/AAC MP4, at most 1280×720/24fps, and a WebP poster under ignored draft media. Explicit stream mapping excludes telemetry/subtitles/data tracks; source GPS, camera/device tags, full timestamps and timecode are removed. Generic codec/container fields remain. Source audio is preserved, so privacy/audio/caption review is still necessary. Import refuses overwrites and outputs over 24MiB. `--finalize` validates/finalizes an existing derivative after an interrupted poster-generation step; it does not re-encode or modify originals.
+
+The local stop record uses a factual date-only value and approximate regional centre, never captured GPS. A standard popup leads to a native video dialog: controls, plays-inline, `preload="none"`, no autoplay. No MP4 request occurs before the user plays it. Closing/Escape pauses and unmounts the player; no-JS/unsupported dialog paths retain ordinary MP4 links. Existing photo navigation remains separate.
+
+Do not add fake/empty caption tracks. Review the full clip, audio and any necessary captions/transcript before publication; a local player is not a claim of caption-complete accessibility.
 
 ## Review and publication
 
