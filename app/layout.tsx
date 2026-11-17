@@ -3,6 +3,8 @@ import { preload } from 'react-dom';
 import '@fontsource-variable/dm-sans';
 import '@fontsource-variable/newsreader';
 import '@fontsource/ibm-plex-mono/latin-400.css';
+import '@ui-sdk/core/web.css';
+import '@/vendor/pico/native.css';
 import './globals.css';
 import './travels/travel.css';
 import FlowerGarden from '@/components/FlowerGarden';

@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@ui-sdk/react/button';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Layer, Source, Marker, NavigationControl, ScaleControl, type MapRef } from 'react-map-gl/maplibre';
 import * as maplibre from 'maplibre-gl';
@@ -190,7 +192,7 @@ export default function MapLibreTripMap({
     onError={event => { console.warn('Local map unavailable:', event.error.message); onFailure(); }}>
     <NavigationControl position="top-right" showCompass={false} />
     <ScaleControl position="bottom-left" />
-    <button type="button" className="map-fit" onClick={fit}>Fit Taiwan</button>
+    <Button className="map-fit" onClick={fit}>Fit Taiwan</Button>
     {activeVideo?.track && <Source id="recorded-video-route" type="geojson" data={route}>
       <Layer id="recorded-video-route-line" type="line"
         paint={{ 'line-color': '#175e9b', 'line-width': 3, 'line-opacity': .75 }} />
@@ -201,7 +203,7 @@ export default function MapLibreTripMap({
     </Marker>}
     {located.map(item => <Marker key={item.id}
       longitude={item.gps[0]} latitude={item.gps[1]} anchor="center">
-      <button type="button" className="map-exact-pin" data-media-id={item.id}
+      <Button className="map-exact-pin" data-media-id={item.id}
         data-longitude={item.gps[0]} data-latitude={item.gps[1]} data-kind={item.kind}
         aria-label={`${item.place}, ${tripDate(item.date)}: ${item.kind === 'photo' ? item.media.alt : item.media.title}`}
         aria-pressed={selected === item.id} onClick={() => select(item, true)} />
@@ -213,7 +215,7 @@ export default function MapLibreTripMap({
         const preview = item.kind === 'photo'
           ? item.media.src.replace('-1800.webp', '-640.webp') : item.media.poster;
         const description = item.kind === 'photo' ? item.media.alt : item.media.title;
-        return <button type="button" className="map-photo-marker map-strip-card" key={item.id}
+        return <Button className="map-photo-marker map-strip-card" key={item.id}
           ref={element => {
             if (element) cards.current.set(item.id, element);
             else cards.current.delete(item.id);
@@ -238,7 +240,7 @@ export default function MapLibreTripMap({
             {item.kind === 'video' && <Play className="map-polaroid-play" size={12} aria-hidden="true" />}
             <time dateTime={item.date}>{tripDate(item.date)}</time>
           </span>
-        </button>;
+        </Button>;
       })}
     </div>
   </Map>;

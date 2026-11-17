@@ -1,3 +1,5 @@
+@layer ui-sdk;
+
 @font-face {
   font-family: 'Allo';
   src: url('/fonts/allo/AlloVariable.woff2') format('woff2');
@@ -20,6 +22,19 @@
   --muted: #64675a;
   --accent: #426344;
   --line: #dcded0;
+  --ui-background: var(--paper);
+  --ui-foreground: var(--ink);
+  --ui-muted: #ebece2;
+  --ui-muted-foreground: var(--muted);
+  --ui-primary: var(--accent);
+  --ui-primary-foreground: #fffdf8;
+  --ui-border: var(--line);
+  --ui-input: #7b8875;
+  --ui-ring: var(--accent);
+  --ui-ring-border: var(--accent);
+  --ui-radius: 4px;
+  --ui-font-sans: var(--font-allo), system-ui, sans-serif;
+  --ui-font-mono: var(--font-allo), monospace;
   font-family: var(--font-allo), 'DM Sans Variable', system-ui, sans-serif;
   font-optical-sizing: auto;
   font-variation-settings: 'ROND' 45;

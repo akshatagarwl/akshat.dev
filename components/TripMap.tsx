@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { Button } from '@ui-sdk/react/button';
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Trip, TripVideo } from '@/lib/trips';
 import { tripDate, tripMedia, videoPosition } from '@/lib/trips';
@@ -60,7 +61,7 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
         setPlaybackTime(0); setClip({ video, place: stop.place, date: stop.date ?? trip.month, stopId: stop.id });
       }} /></MapBoundary>}
       {clip && <section className="video-viewer" aria-labelledby={`video-viewer-${trip.id}`} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeVideo(); } }}>
-        <header><div><h2 id={`video-viewer-${trip.id}`}>{clip.place}</h2><time dateTime={clip.date}>{tripDate(clip.date)}</time></div><button ref={videoClose} type="button" onClick={closeVideo}>close</button></header>
+        <header><div><h2 id={`video-viewer-${trip.id}`}>{clip.place}</h2><time dateTime={clip.date}>{tripDate(clip.date)}</time></div><Button ref={videoClose} onClick={closeVideo}>close</Button></header>
         <video ref={player} key={clip.video.id} poster={clip.video.poster} controls playsInline preload="none" width={clip.video.width} height={clip.video.height} aria-label={clip.video.title} onTimeUpdate={event => setPlaybackTime(event.currentTarget.currentTime)} onSeeking={event => setPlaybackTime(event.currentTarget.currentTime)}>
           <source src={clip.video.src} type="video/mp4" />
           {clip.video.captions && <track kind="captions" src={clip.video.captions} srcLang="en" label="English" default />}
@@ -76,9 +77,19 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
       if (event.key === 'ArrowRight' && index !== null) { event.preventDefault(); setIndex(Math.min(photos.length - 1, index + 1)); }
       if (event.key === 'ArrowLeft' && index !== null) { event.preventDefault(); setIndex(Math.max(0, index - 1)); }
     }}>
-      <header><div><h2 id={`viewer-${trip.id}`}>{selected?.place ?? trip.title}</h2>{selected && <time dateTime={selected.date}>{tripDate(selected.date)}</time>}</div><button type="button" onClick={() => viewer.current?.close()}>close</button></header>
+      <header><div><h2 id={`viewer-${trip.id}`}>{selected?.place ?? trip.title}</h2>{selected && <time dateTime={selected.date}>{tripDate(selected.date)}</time>}</div><Button onClick={() => viewer.current?.close()}>close</Button></header>
       {selected && <figure><img src={selected.photo.original?.src ?? selected.photo.src} alt={selected.photo.alt} width={selected.photo.original?.width ?? selected.photo.width} height={selected.photo.original?.height ?? selected.photo.height} /><figcaption>{selected.photo.caption}</figcaption></figure>}
-      <nav aria-label="Photo navigation"><button type="button" disabled={index === null || index === 0} onClick={() => setIndex(i => i === null ? null : Math.max(0, i - 1))}>previous</button><span>{index === null ? '' : `${index + 1} / ${photos.length}`}</span><button type="button" disabled={index === null || index === photos.length - 1} onClick={() => setIndex(i => i === null ? null : Math.min(photos.length - 1, i + 1))}>next</button></nav>
+      <nav aria-label="Photo navigation">
+        <Button disabled={index === null || index === 0}
+          onClick={() => setIndex(current => current === null ? null : Math.max(0, current - 1))}>
+          previous
+        </Button>
+        <span>{index === null ? '' : `${index + 1} / ${photos.length}`}</span>
+        <Button disabled={index === null || index === photos.length - 1}
+          onClick={() => setIndex(current => current === null ? null : Math.min(photos.length - 1, current + 1))}>
+          next
+        </Button>
+      </nav>
     </dialog>
   </section>;
 }
