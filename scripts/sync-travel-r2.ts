@@ -61,7 +61,7 @@ for (const path of [...paths].sort()) {
   let status = size > 300_000_000 ? 'needs-s3-multipart' : 'planned';
   if (process.argv.includes('--images-only') && match[2] !== 'webp' && status === 'planned') status = 'deferred-video';
   const existing = remote.get(key);
-  let verification: ReadbackVerification | undefined;
+  const verification = readbacks.get(key);
   if (upload && (status === 'planned' || existing)) {
     try {
       const object = existing ?? cf([
@@ -73,7 +73,6 @@ for (const path of [...paths].sort()) {
       const multipart = /^[a-f0-9]{32}-[1-9][0-9]*$/i.test(etag);
       if (!matchesSize) throw new Error('R2 size integrity verification failed.');
       if (multipart) {
-        verification = readbacks.get(key);
         const matchesReadback = verification?.size === size && verification.sha256 === sha256
           && verification.md5 === expected && verification.multipartEtag === etag;
         if (!matchesReadback) {
