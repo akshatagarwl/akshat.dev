@@ -3,28 +3,25 @@ import AxeBuilder from '@axe-core/playwright';
 import sharp from 'sharp';
 import { existsSync, readFileSync } from 'node:fs';
 import { videoPosition } from '../lib/trips';
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 
 const trip = '/travels/taiwan';
 const draft = JSON.parse(readFileSync('.generated/travel-draft/trips.json', 'utf8'))[0];
 const mediaCount = draft.stops.reduce((count: number, stop: { photos: unknown[]; videos?: unknown[] }) => count + stop.photos.length + (stop.videos?.length ?? 0), 0);
-const reveal = async (page: import('@playwright/test').Page, place: string) => {
-  const marker = page.getByRole('button', { name: new RegExp(`^Explore ${place},`) });
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const cluster = page.getByRole('button', { name: new RegExp(`^Choose places:.*${place}`) });
-    await expect.poll(async () => await marker.isVisible() || await cluster.isVisible()).toBe(true);
-    if (await marker.isVisible()) return marker;
-    await cluster.click();
-    await page.getByRole('button', { name: new RegExp(`^Choose ${place}`) }).click();
-    await page.locator('.maplibregl-popup-close-button').click();
-    await expect(marker).toBeVisible();
-  }
-  await expect(marker).toBeVisible();
-  return marker;
+const card = (page: import('@playwright/test').Page, id: string) =>
+  page.locator(`.map-strip-card[data-media-id="${id}"]`);
+const pin = (page: import('@playwright/test').Page, id: string) =>
+  page.locator(`.map-exact-pin[data-media-id="${id}"]`);
+const openMedia = async (page: import('@playwright/test').Page, id: string) => {
+  const item = card(page, id);
+  await item.focus();
+  if (await item.getAttribute('aria-pressed') !== 'true') await item.press('Enter');
+  await item.press('Enter');
 };
 const ready = async (page: import('@playwright/test').Page) => {
   await page.goto(trip);
   await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
+  await expect(page.locator('.maplibregl-canvas')).toHaveAttribute('data-camera', /^\[/);
 };
 
 test('maintained MapLibre component is the only travel surface and dates are visible', async ({ page }) => {
@@ -41,18 +38,143 @@ test('maintained MapLibre component is the only travel surface and dates are vis
   const fontPreload = page.locator('link[rel="preload"][as="font"]');
   await expect(fontPreload).toHaveCount(1);
   await expect(fontPreload).toHaveAttribute('href', '/fonts/allo/AlloVariable.woff2');
-  const labels = ['.map-caption h1', '.map-caption > time', '.maplibregl-map', '.map-cluster-marker'];
+  const labels = ['.map-caption h1', '.map-caption > time', '.maplibregl-map', '.map-strip-card'];
   for (const selector of labels) {
     const family = await page.locator(selector).first().evaluate(element => {
       return getComputedStyle(element).fontFamily;
     });
     expect(family.split(',')[0]).toBe('Allo');
   }
-  await expect(page.locator('.map-cluster-marker')).not.toHaveCount(0);
-  await expect(page.locator('.map-cluster-marker').first()).toHaveAccessibleName(/Oct 2026/);
+  await expect(page.locator('.map-strip-card')).toHaveCount(mediaCount);
+  await expect(page.locator('.map-cluster-marker, .map-stack-count, .map-card-stack, .map-card-leader')).toHaveCount(0);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   expect((await page.locator('.trip-map-stage').boundingBox())!.height).toBeGreaterThan(page.viewportSize()!.height / 2);
   expect(external).toEqual([]); expect(errors).toEqual([]); expect(failures).toEqual([]);
+});
+
+test('chronological polaroids fit a desktop row or a bounded swipe strip without cropped dates', async ({ page }) => {
+  await ready(page);
+  const cards = page.locator('.map-strip-card');
+  await expect(cards).toHaveCount(mediaCount);
+  await expect(page.locator('[data-overlapping="true"]')).toHaveCount(0);
+  const stage = (await page.locator('.trip-map-stage').boundingBox())!;
+  const rectangles = await page.locator('.map-polaroid').evaluateAll(elements =>
+    elements.map(element => {
+      const box = element.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+    }));
+  const controls = await page.locator('.map-caption, .map-fit, .maplibregl-ctrl-attrib').evaluateAll(elements =>
+    elements.map(element => {
+      const box = element.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+    }));
+  for (const [index, rectangle] of rectangles.entries()) {
+    if (page.viewportSize()!.width >= 1200) {
+      expect(rectangle.left).toBeGreaterThanOrEqual(stage.x);
+      expect(rectangle.right).toBeLessThanOrEqual(stage.x + stage.width);
+    }
+    expect(rectangle.top).toBeGreaterThanOrEqual(stage.y);
+    expect(rectangle.bottom).toBeLessThanOrEqual(stage.y + stage.height);
+    for (const other of [...rectangles.slice(index + 1), ...controls]) {
+      const overlaps = rectangle.left < other.right && rectangle.right > other.left
+        && rectangle.top < other.bottom && rectangle.bottom > other.top;
+      expect(overlaps).toBe(false);
+    }
+  }
+  const dates = await cards.locator('time').evaluateAll(elements => elements.map(element => element.getAttribute('datetime')));
+  expect(dates).toEqual([...dates].sort());
+  const stripBox = (await page.locator('.map-media-strip').boundingBox())!;
+  expect(stripBox.x).toBeGreaterThanOrEqual(stage.x);
+  expect(stripBox.x + stripBox.width).toBeLessThanOrEqual(stage.x + stage.width);
+  for (const date of await cards.locator('time').all()) {
+    await expect(date).toHaveText(/\d+ Oct 2026/);
+    expect(await date.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+  }
+  expect(await cards.first().locator('time').evaluate(element => getComputedStyle(element).fontVariantNumeric))
+    .toBe('tabular-nums');
+});
+
+test('each pin matches its original GPS exactly, not its stop; one zoom separates nearby pins', async ({ page }) => {
+  test.setTimeout(90_000);
+  const sources = JSON.parse(readFileSync('.generated/travel-draft/verify/polaroid/gps-sources.json', 'utf8'));
+  const expected = new Map<string, number[]>();
+  for (const [id, evidence] of Object.entries(sources) as [string, { source: string; gps: number[] }][]) {
+    const telemetry = id === 'coast-ride';
+    const args = telemetry ? ['-ee', '-G3', '-SampleTime'] : [];
+    const record = JSON.parse(execFileSync('exiftool', [
+      ...args, '-j', '-n', '-GPSLongitude', '-GPSLatitude', evidence.source,
+    ], { maxBuffer: 16 * 1024 * 1024 }).toString())[0];
+    const prefix = telemetry ? 'Doc1:' : '';
+    const gps = [record[`${prefix}GPSLongitude`], record[`${prefix}GPSLatitude`]];
+    expect(gps.every(Number.isFinite)).toBe(true);
+    expect(evidence.gps).toEqual(gps);
+    expected.set(id, gps);
+  }
+  await ready(page);
+  await expect(page.locator('.map-exact-pin')).toHaveCount(mediaCount);
+  for (const [id, gps] of expected) {
+    const marker = pin(page, id);
+    expect([Number(await marker.getAttribute('data-longitude')), Number(await marker.getAttribute('data-latitude'))])
+      .toEqual(gps);
+    await expect(card(page, id)).toBeVisible();
+  }
+  const distance = async () => {
+    const first = (await pin(page, 'train').boundingBox())!;
+    const second = (await pin(page, 'hualien-north').boundingBox())!;
+    return Math.hypot(first.x - second.x, first.y - second.y);
+  };
+  const original = await distance();
+  await card(page, 'train').focus();
+  await card(page, 'train').press('Enter');
+  await expect.poll(distance).toBeGreaterThan(original * 1.9);
+  expect(await distance()).toBeGreaterThan(12);
+  for (const [id, gps] of expected) {
+    expect([Number(await pin(page, id).getAttribute('data-longitude')),
+      Number(await pin(page, id).getAttribute('data-latitude'))]).toEqual(gps);
+  }
+});
+
+test('strip and exact pins link both ways, keyboard steps and a second activation opens media', async ({ page }) => {
+  await ready(page);
+  const first = card(page, 'taipei-evening');
+  await first.focus();
+  await first.press('Enter');
+  await expect(first).toHaveAttribute('aria-pressed', 'true');
+  await expect(pin(page, 'taipei-evening')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await first.press('ArrowRight');
+  await expect(card(page, 'lotus-pond')).toBeFocused();
+  await expect(pin(page, 'lotus-pond')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Fit Taiwan' }).click();
+  await pin(page, 'jiufen').click();
+  await expect(card(page, 'jiufen')).toHaveAttribute('aria-pressed', 'true');
+  const item = (await card(page, 'jiufen').boundingBox())!;
+  const strip = (await page.locator('.map-media-strip').boundingBox())!;
+  expect(item.x).toBeGreaterThanOrEqual(strip.x);
+  expect(item.x + item.width).toBeLessThanOrEqual(strip.x + strip.width);
+  await card(page, 'jiufen').press('Enter');
+  await expect(page.getByRole('dialog')).toBeVisible();
+});
+
+test('swiping the native strip selects a card and its exact pin', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  const page = await context.newPage();
+  await page.goto('http://127.0.0.1:4323' + trip);
+  await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
+  const strip = page.locator('.map-media-strip');
+  const box = (await strip.boundingBox())!;
+  const session = await context.newCDPSession(page);
+  const start = { x: box.x + box.width - 40, y: box.y + box.height / 2 };
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
+  for (let index = 1; index <= 8; index++) {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x - index * 25, y: start.y }] });
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect.poll(() => strip.evaluate(element => element.scrollLeft)).toBeGreaterThan(100);
+  const selected = page.locator('.map-strip-card[aria-pressed="true"]');
+  await expect(selected).toHaveCount(1);
+  await expect(pin(page, (await selected.getAttribute('data-media-id'))!)).toHaveAttribute('aria-pressed', 'true');
+  await context.close();
 });
 
 test('native map controls zoom, fit and keyboard pan; wheel still scrolls the page', async ({ page }) => {
@@ -66,7 +188,7 @@ test('native map controls zoom, fit and keyboard pan; wheel still scrolls the pa
   await camera.focus(); await page.keyboard.press('ArrowRight');
   await expect(camera).not.toHaveAttribute('data-camera', start!);
   await page.getByRole('button', { name: 'Fit Taiwan' }).click();
-  await page.locator('.maplibregl-canvas').hover();
+  await page.locator('.maplibregl-canvas').hover({ position: { x: 10, y: 200 } });
   const before = await page.evaluate(() => scrollY);
   await page.mouse.wheel(0, 350);
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before);
@@ -87,16 +209,11 @@ test('one-finger touch over the standard map scrolls the page', async ({ browser
   await context.close();
 });
 
-test('standard popups show the actual photo date and open the native viewer', async ({ page }) => {
+test('individual photo cards show the actual date and open the native viewer', async ({ page }) => {
   await ready(page);
-  await (await reveal(page, 'Jiufen')).click();
-  const popup = page.locator('.maplibregl-popup');
-  await expect(popup.getByRole('heading')).toHaveText('Jiufen');
-  await expect(popup.locator('time')).toHaveText('20 Oct 2026');
-  const link = popup.getByRole('link', { name: /^Open photo:/ });
-  const [tab] = await Promise.all([page.context().waitForEvent('page'), link.click({ modifiers: ['ControlOrMeta'] })]);
-  await expect(tab).toHaveURL(/jiufen-original\.webp$/); await tab.close();
-  await link.click();
+  const link = card(page, 'jiufen');
+  await expect(link.locator('time')).toHaveText('20 Oct 2026');
+  await openMedia(page, 'jiufen');
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('time')).toHaveText('20 Oct 2026');
@@ -150,15 +267,14 @@ test('real WebGL context loss returns to the generic poster and native photo lin
 test('unsupported dialog API preserves ordinary image navigation', async ({ page }) => {
   await page.addInitScript(() => { Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { value: undefined, configurable: true }); });
   await ready(page);
-  await (await reveal(page, 'Jiufen')).click();
-  await page.locator('.map-photo-popup a').click();
+  await openMedia(page, 'jiufen');
   await expect(page).toHaveURL(/jiufen-original\.webp$/);
 });
 
 test('reduced motion leaves reading and map/photo selection usable', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' }); await ready(page);
-  await (await reveal(page, 'Jiufen')).click();
-  await expect(page.locator('.map-photo-popup time')).toHaveText('20 Oct 2026');
+  await openMedia(page, 'jiufen');
+  await expect(page.locator('.photo-viewer time')).toHaveText('20 Oct 2026');
   await expect(page.locator('.trip-map')).not.toHaveCSS('position', 'sticky');
 });
 
@@ -181,15 +297,12 @@ test('video is click-to-play, decodes real frames, and stops on close', async ({
   const requests: string[] = [];
   page.on('request', request => { if (request.url().endsWith('.mp4')) requests.push(request.url()); });
   await ready(page);
-  const stopMarker = await reveal(page, 'Bawengweng Bikeway');
   const cameraReference = page.locator('.maplibregl-canvas');
-  await stopMarker.click();
-  await expect(cameraReference).toHaveAttribute('data-camera', /,160,0,0,0\]$/);
-  const originalView = await cameraReference.getAttribute('data-camera');
-  await expect(page.locator('.map-video-link')).toContainText('Play video · 2:54');
   expect(requests).toEqual([]);
-  const link = page.getByRole('link', { name: /^Play video:/ });
-  await link.click();
+  await card(page, 'coast-ride').focus();
+  await card(page, 'coast-ride').press('Enter');
+  const originalView = await cameraReference.getAttribute('data-camera');
+  await openMedia(page, 'coast-ride');
   const dialog = page.locator('.video-viewer'), video = dialog.locator('video');
   await expect(dialog).toBeVisible(); await expect(dialog.locator('time')).toHaveText('15 Oct 2026');
   await expect(video).toHaveAttribute('preload', 'none');
@@ -205,7 +318,7 @@ test('video is click-to-play, decodes real frames, and stops on close', async ({
   await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible();
   await expect(page.locator('video')).toHaveCount(0);
   expect(await handle!.evaluate(v => (v as HTMLVideoElement).paused)).toBe(true);
-  await expect(page.getByRole('button', { name: 'Explore Bawengweng Bikeway, 15 Oct 2026', exact: true })).toBeFocused();
+  await expect(card(page, 'coast-ride')).toBeFocused();
   await expect(cameraReference).toHaveAttribute('data-camera', originalView!);
 });
 
@@ -227,8 +340,7 @@ test('high-quality video preserves frame rate and strips embedded sensitive meta
 test('recorded GPS follows playback and seeking without moving the camera or requesting geolocation', async ({ page }) => {
   await page.addInitScript(() => { navigator.geolocation.getCurrentPosition = () => { throw new Error('Current location must never be requested.'); }; navigator.geolocation.watchPosition = () => { throw new Error('Current location must never be requested.'); }; });
   await ready(page);
-  await (await reveal(page, 'Bawengweng Bikeway')).click();
-  await page.getByRole('link', { name: /^Play video:/ }).click();
+  await openMedia(page, 'coast-ride');
   const marker = page.locator('.video-position-marker'), video = page.locator('video');
   const draft = JSON.parse(readFileSync('.generated/travel-draft/trips.json', 'utf8'));
   const track = draft[0].stops.find((s: { id: string }) => s.id === 'east-coast').videos[0].track;
@@ -247,7 +359,7 @@ test('recorded GPS follows playback and seeking without moving the camera or req
   const dot = (await marker.boundingBox())!, panel = (await page.locator('.video-viewer').boundingBox())!;
   expect(dot.y + dot.height <= panel.y || dot.x >= panel.x + panel.width).toBe(true);
   expect(await video.evaluate(v => (v as HTMLVideoElement).paused)).toBe(true);
-  await expect(page.locator('.video-position-status')).toHaveText('Recorded GPS · follows playback');
+  await expect(page.locator('.video-position-status')).toHaveText('GPS');
   await page.locator('.video-viewer').getByRole('button', { name: 'close' }).click();
   await expect(marker).toHaveCount(0);
 });
@@ -268,8 +380,7 @@ test('every compatible clip decodes and full-resolution photos have no private m
     }
     for (const clip of stop.videos ?? []) {
       await ready(page);
-      await (await reveal(page, stop.place)).click();
-      await page.getByRole('link', { name: /^Play video:/ }).click();
+      await openMedia(page, clip.id);
       const video = page.locator('video');
       await video.evaluate(async element => {
         const player = element as HTMLVideoElement;
@@ -294,7 +405,7 @@ test('large private videos stream byte ranges and retain the same-origin privacy
   expect((await request.get('/', { headers: { Origin: 'https://untrusted.example' } })).status()).toBe(403);
 });
 
-test('map and popup UI remain accessible and fit narrow screens', async ({ page }, info) => {
+test('map and individual media UI remain accessible and fit narrow screens', async ({ page }, info) => {
   test.setTimeout(90000);
   for (const path of ['/travels', trip]) {
     await page.goto(path);
@@ -304,15 +415,21 @@ test('map and popup UI remain accessible and fit narrow screens', async ({ page 
       await page.goto(path);
       await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await (await reveal(page, 'Jiufen')).click();
-      await expect.poll(async () => {
-        const stage = (await page.locator('.trip-map-stage').boundingBox())!, popup = (await page.locator('.maplibregl-popup').boundingBox())!;
-        return popup.x >= stage.x - 1 && popup.x + popup.width <= stage.x + stage.width + 1 && popup.y >= stage.y - 1 && popup.y + popup.height <= stage.y + stage.height + 1;
-      }).toBe(true);
-      await page.locator('.maplibregl-popup-close-button').click();
+      await expect(page.locator('.map-strip-card')).toHaveCount(mediaCount);
+      await expect(page.locator('[data-overlapping="true"]')).toHaveCount(0);
+      const stage = (await page.locator('.trip-map-stage').boundingBox())!;
+      for (const item of await page.locator('.map-polaroid').all()) {
+        const rectangle = (await item.boundingBox())!;
+        if (stage.width >= 1050) {
+          expect(rectangle.x).toBeGreaterThanOrEqual(stage.x);
+          expect(rectangle.x + rectangle.width).toBeLessThanOrEqual(stage.x + stage.width);
+        }
+        expect(rectangle.y).toBeGreaterThanOrEqual(stage.y);
+        expect(rectangle.y + rectangle.height).toBeLessThanOrEqual(stage.y + stage.height);
+      }
     }
     await page.setViewportSize(info.project.name === 'mobile' ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
-    await (await reveal(page, 'Jiufen')).click();
+    await openMedia(page, 'jiufen');
     const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     expect(audit.violations, JSON.stringify(audit.violations, null, 2)).toEqual([]);
     if (path === trip) await page.screenshot({ path: `.generated/travel-draft/verify/map-only-${info.project.name}.jpg`, fullPage: true });

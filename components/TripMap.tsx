@@ -65,11 +65,11 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
           {clip.video.captions && <track kind="captions" src={clip.video.captions} srcLang="en" label="English" default />}
           <a href={clip.video.src}>Open video</a>
         </video>
-        <a className="video-original" href={clip.video.original?.src ?? clip.video.src} download>{clip.video.original ? 'download original-quality video' : 'download video'}</a>
-        <p className="video-position-status" aria-live="off">{failed ? 'Map unavailable · video still playable' : clip.video.track ? videoPosition(clip.video.track, playbackTime) ? 'Recorded GPS · follows playback' : 'No GPS fix at this video position' : 'No recorded GPS available'}</p>
-        {trip.draft && !clip.video.captions && <p className="video-review-note">Local preview · audio/caption review pending.</p>}
+        <a className="video-original" href={clip.video.original?.src ?? clip.video.src} download>original</a>
+        <p className="video-position-status" aria-live="off">{failed ? 'Map unavailable' : clip.video.track ? videoPosition(clip.video.track, playbackTime) ? 'GPS' : 'GPS gap' : 'No GPS'}</p>
+        {trip.draft && !clip.video.captions && <p className="video-review-note">Unreviewed audio/captions</p>}
       </section>}
-      <header className="map-caption"><Heading>{trip.title}</Heading><time dateTime={trip.month}>{tripDate(trip.month)}</time>{trip.draft && <small>local draft · not published</small>}{href && <a className="trip-cover" href={href}>Explore the map</a>}</header>
+      <header className="map-caption"><Heading>{href ? <a className="trip-cover" href={href}>{trip.title}</a> : trip.title}</Heading><time dateTime={trip.month}>{tripDate(trip.month)}</time>{trip.draft && <small>draft</small>}</header>
     </div>
     <dialog ref={viewer} className="photo-viewer" aria-labelledby={`viewer-${trip.id}`} onClose={() => setIndex(null)} onClick={event => { if (event.target === event.currentTarget) viewer.current?.close(); }} onKeyDown={event => {
       if (event.key === 'ArrowRight' && index !== null) { event.preventDefault(); setIndex(Math.min(photos.length - 1, index + 1)); }

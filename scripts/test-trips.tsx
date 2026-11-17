@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { parseTrips, photoSrcSet, tripDate, videoDuration, videoPosition, type VideoPosition } from '../lib/trips';
+import { parseTrips, photoSrcSet, tripDate, tripMedia, videoDuration, videoPosition, type VideoPosition } from '../lib/trips';
 import { TravelGallery } from '../components/TravelGallery';
 
 const image = { id: 'sample', src: '/travels/fixture/sample-1800.webp', alt: 'Clearly labelled test photograph.', width: 1800, height: 1800 };
@@ -24,6 +24,18 @@ const video = { id: 'clip', src: '/travels/fixture/clip.mp4', poster: '/travels/
 const withVideo = { ...valid, stops: [...valid.stops, { id: 'video-stop', place: 'Test region', photos: [], videos: [video] }] };
 assert.equal(parse(withVideo)[0].stops[1].videos?.[0].duration, 173.95);
 assert.equal(videoDuration(video.duration), '2:54');
+const captured = [121.3527327, 23.0734238];
+const individual = parse({ ...withVideo, stops: [
+  { ...valid.stops[0], photos: [{ ...image, gps: captured }] },
+  { ...withVideo.stops[1], videos: [{ ...video, gps: captured }] },
+] })[0];
+const items = tripMedia(individual);
+assert.equal(items.length, 2);
+assert.deepEqual(items.map(item => item.gps), [captured, captured]);
+assert.deepEqual(tripMedia(parse(withVideo)[0]).map(item => item.gps), [undefined, undefined]);
+for (const gps of [[181, 23], [121, 85], [NaN, 23], [121], ['121', 23]]) {
+  assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], photos: [{ ...image, gps }] }] }));
+}
 for (const src of ['https://example.com/clip.mp4', '/travels/../clip.mp4', '/travels/a/clipXmp4', '/travels/a/clip.mp4?gps=1']) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, src }] }] }));
 for (const duration of [0, -1, Infinity, NaN]) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, duration }] }] }));
 assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, id: image.id }] }] }));

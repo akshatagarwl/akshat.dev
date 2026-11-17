@@ -5,6 +5,13 @@
   font-style: normal;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Allo';
+  src: url('/fonts/allo/Allo-Oblique.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
 :root {
   color-scheme: light;
   --font-allo: 'Allo';
@@ -15,13 +22,14 @@
   --line: #dcded0;
   font-family: var(--font-allo), 'DM Sans Variable', system-ui, sans-serif;
   font-optical-sizing: auto;
-  font-variation-settings: 'ROND' 50;
+  font-variation-settings: 'ROND' 45;
+  font-feature-settings: 'calt' 1;
   font-size: 16px;
   background: var(--paper);
   color: var(--ink);
 }
 * { box-sizing: border-box; }
-body { margin: 0; line-height: 1.6; }
+body { margin: 0; font-weight: 400; line-height: 1.65; letter-spacing: -.008em; }
 a { color: inherit; text-underline-offset: 4px; text-decoration-thickness: 1px; }
 a:hover { color: var(--accent); }
 a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; border-radius: 2px; }
@@ -34,9 +42,11 @@ button:disabled { cursor: default; }
 .site-shell { position: relative; max-width: 640px; margin: 0 auto; padding: 38px 0 30px; }
 .site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 60px; }
 .site-brand { font-size: 12px; text-decoration: none; white-space: nowrap; }
-h1, h2 { font-family: var(--font-allo), 'Newsreader Variable', Georgia, serif; font-weight: 450; letter-spacing: -.035em; }
-h1 { font-size: 44px; line-height: 1.1; margin: 0 0 14px; }
-h2 { font-size: 28px; line-height: 1.2; margin: 0 0 18px; }
+h1, h2 { font-family: var(--font-allo), 'Newsreader Variable', Georgia, serif; font-weight: 580; font-variation-settings: 'opsz' 32, 'ROND' 70; letter-spacing: -.025em; }
+h1 { font-size: clamp(40px, 5vw, 52px); line-height: 1.06; margin: 0 0 16px; }
+h2 { font-size: 30px; line-height: 1.18; margin: 0 0 18px; }
+time, .diary-date { font-variant-numeric: tabular-nums; }
+.description, .section-description, .eyebrow, .site-footer { font-style: italic; }
 p { margin: 0 0 16px; }
 .intro-description { max-width: 450px; font-size: 15px; color: var(--muted); margin-bottom: 12px; }
 .contact { display: inline-block; min-height: 28px; font-size: 13px; }

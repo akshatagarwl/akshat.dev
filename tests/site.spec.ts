@@ -44,6 +44,8 @@ test('Allo is self-hosted, variable, licensed and the only preloaded font', asyn
   const response = await request.get(fontPath);
   expect(response.ok()).toBe(true);
   expect(await response.body()).toEqual(packageFont);
+  const oblique = await request.get('/fonts/allo/Allo-Oblique.woff2');
+  expect(await oblique.body()).toEqual(readFileSync('node_modules/allo-font/fonts/webfonts/Allo-Oblique.woff2'));
   const license = await request.get('/licenses/allo.txt');
   expect(await license.text()).toBe(readFileSync('node_modules/allo-font/OFL.txt', 'utf8'));
 
@@ -56,7 +58,7 @@ test('Allo is self-hosted, variable, licensed and the only preloaded font', asyn
     await expect(preload).toHaveAttribute('crossorigin', /^(anonymous)?$/);
     const typography = await page.locator('body').evaluate(element => {
       const style = getComputedStyle(element);
-      const font = [...document.fonts].find(face => face.family === 'Allo');
+      const font = [...document.fonts].find(face => face.family === 'Allo' && face.style === 'normal');
       if (!font) throw new Error('Allo is absent from document.fonts.');
       return {
         family: style.fontFamily, variations: style.fontVariationSettings,
@@ -65,11 +67,19 @@ test('Allo is self-hosted, variable, licensed and the only preloaded font', asyn
       };
     });
     expect(typography.family).toBe('Allo, "DM Sans Variable", system-ui, sans-serif');
-    expect(typography.variations).toBe('"ROND" 50');
+    expect(typography.variations).toBe('"ROND" 45');
     expect(typography.opticalSizing).toBe('auto');
     expect(typography.weight).toBe('100 900');
     expect(typography.display).toBe('swap');
     expect(typography.status).toBe('loaded');
+    const display = await page.locator('h1').evaluate(element => {
+      const style = getComputedStyle(element);
+      return { weight: style.fontWeight, variations: style.fontVariationSettings };
+    });
+    expect(display.weight).toBe('580');
+    expect(display.variations).toContain('"opsz" 32');
+    expect(display.variations).toContain('"ROND" 70');
+    expect(await page.locator('.site-footer').evaluate(element => getComputedStyle(element).fontStyle)).toBe('italic');
   }
 });
 

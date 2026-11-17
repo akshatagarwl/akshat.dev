@@ -1,7 +1,8 @@
 export type OriginalMedia = { src: string; width: number; height: number };
-export type TripPhoto = { original?: OriginalMedia; id: string; src: string; alt: string; width: number; height: number; caption?: string };
+export type RecordedGps = [longitude: number, latitude: number];
+export type TripPhoto = { gps?: RecordedGps; original?: OriginalMedia; id: string; src: string; alt: string; width: number; height: number; caption?: string };
 export type VideoPosition = [seconds: number, longitude: number, latitude: number];
-export type TripVideo = { original?: OriginalMedia & { mime: string }; id: string; src: string; poster: string; title: string; width: number; height: number; duration: number; captions?: string; track?: VideoPosition[] };
+export type TripVideo = { gps?: RecordedGps; original?: OriginalMedia & { mime: string }; id: string; src: string; poster: string; title: string; width: number; height: number; duration: number; captions?: string; track?: VideoPosition[] };
 export type TripStop = { id: string; place: string; date?: string; location?: [number, number]; locationNote?: string; note?: string; photos: TripPhoto[]; videos?: TripVideo[] };
 export type Trip = { id: string; title: string; month: string; cover: TripPhoto; stops: TripStop[]; draft?: boolean };
 
@@ -13,11 +14,21 @@ function original(value: unknown, extension: 'webp' | 'mp4'): OriginalMedia | un
   if (!object(value) || !text(value.src) || !new RegExp(`^/travels/(?:[a-z0-9-]+/)+[a-z0-9-]+\\.${extension}$`).test(value.src) || ![value.width, value.height].every(n => typeof n === 'number' && Number.isInteger(n) && n > 0 && n <= 12000)) throw new Error('Original-quality media needs a safe local path and valid dimensions.');
   return { src: value.src, width: value.width as number, height: value.height as number };
 }
+function recordedGps(value: unknown): RecordedGps | undefined {
+  if (value === undefined) return;
+  if (!Array.isArray(value) || value.length !== 2
+    || !value.every(coordinate => typeof coordinate === 'number' && Number.isFinite(coordinate))
+    || Math.abs(value[0]) > 180 || Math.abs(value[1]) >= 85) {
+    throw new Error('Media GPS must be an original, finite longitude/latitude pair.');
+  }
+  return [value[0], value[1]];
+}
+
 function photo(value: unknown): TripPhoto {
   if (!object(value) || !slug(value.id) || !text(value.src) || !/^\/travels\/(?:[a-z0-9-]+\/)+[a-z0-9-]+\.(?:webp|avif|jpg|png)$/.test(value.src) || !text(value.alt)) throw new Error('Trip photos need an id, a local image and descriptive alt text.');
   if (![value.width, value.height].every(n => typeof n === 'number' && Number.isInteger(n) && n > 0 && n <= 12000)) throw new Error('Trip photos need valid dimensions.');
   if (value.caption !== undefined && !text(value.caption)) throw new Error('Photo captions must be nonempty.');
-  return { original: original(value.original, 'webp'), id: value.id, src: value.src, alt: value.alt, width: value.width as number, height: value.height as number, caption: value.caption as string | undefined };
+  return { gps: recordedGps(value.gps), original: original(value.original, 'webp'), id: value.id, src: value.src, alt: value.alt, width: value.width as number, height: value.height as number, caption: value.caption as string | undefined };
 }
 
 function video(value: unknown): TripVideo {
@@ -28,7 +39,25 @@ function video(value: unknown): TripVideo {
   if (value.track !== undefined && (!Array.isArray(value.track) || value.track.length < 2 || value.track.length > 10000 || value.track.some((point, i, all) => !Array.isArray(point) || point.length !== 3 || !point.every(n => typeof n === 'number' && Number.isFinite(n)) || point[0] < 0 || point[0] > (value.duration as number) || Math.abs(point[1]) > 180 || Math.abs(point[2]) >= 85 || (i > 0 && point[0] <= all[i - 1][0])))) throw new Error('Recorded GPS needs ordered, finite relative-time samples within the video.');
   const full = original(value.original, 'mp4');
   if (full && (!object(value.original) || !text(value.original.mime) || !/^video\/mp4; codecs="[A-Za-z0-9.]+"$/.test(value.original.mime))) throw new Error('Original video needs its validated MP4 codec MIME type.');
-  return { original: full ? { ...full, mime: (value.original as Record<string, unknown>).mime as string } : undefined, id: value.id, src: value.src as string, poster: value.poster as string, title: value.title, width: value.width as number, height: value.height as number, duration: value.duration, captions: value.captions as string | undefined, track: value.track as VideoPosition[] | undefined };
+  return { gps: recordedGps(value.gps), original: full ? { ...full, mime: (value.original as Record<string, unknown>).mime as string } : undefined, id: value.id, src: value.src as string, poster: value.poster as string, title: value.title, width: value.width as number, height: value.height as number, duration: value.duration, captions: value.captions as string | undefined, track: value.track as VideoPosition[] | undefined };
+}
+
+export type TripMapItem = {
+  id: string; stopId: string; place: string; date: string; gps?: RecordedGps;
+} & ({ kind: 'photo'; media: TripPhoto } | { kind: 'video'; media: TripVideo });
+
+export function tripMedia(trip: Trip): TripMapItem[] {
+  return trip.stops.flatMap(stop => {
+    const context = { stopId: stop.id, place: stop.place, date: stop.date ?? trip.month };
+    return [
+      ...stop.photos.map(media => ({
+        ...context, id: media.id, gps: media.gps, kind: 'photo' as const, media,
+      })),
+      ...(stop.videos ?? []).map(media => ({
+        ...context, id: media.id, gps: media.gps, kind: 'video' as const, media,
+      })),
+    ];
+  });
 }
 
 export function videoDuration(seconds: number) { const whole = Math.ceil(seconds); return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`; }
