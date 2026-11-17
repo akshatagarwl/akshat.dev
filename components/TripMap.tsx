@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Trip, TripVideo } from '@/lib/trips';
-import { tripDate, videoPosition } from '@/lib/trips';
+import { tripDate, tripMedia, videoPosition } from '@/lib/trips';
 
 const MapLibreTripMap = dynamic(() => import('./MapLibreTripMap'), { ssr: false });
 class MapBoundary extends Component<{ children: ReactNode; onFailure: () => void }, { failed: boolean }> {
@@ -24,7 +24,8 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
   const [visible, setVisible] = useState(false), [ready, setReady] = useState(false), [failed, setFailed] = useState(false);
   const [index, setIndex] = useState<number | null>(null);
   const onMapReady = useCallback(() => setReady(true), []), onMapFailure = useCallback(() => setFailed(true), []);
-  const photos = trip.stops.flatMap(stop => stop.photos.map(photo => ({ photo, place: stop.place, date: stop.date ?? trip.month })));
+  const media = tripMedia(trip);
+  const photos = media.flatMap(item => item.kind === 'photo' ? [{ photo: item.media, place: item.place, date: item.date }] : []);
   const selected = index === null ? undefined : photos[index];
   const Heading = href ? 'h2' : 'h1';
   useEffect(() => {
@@ -46,7 +47,7 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
     <div className="trip-map-stage">
       <div className="map-static" hidden={ready && !failed}>
         <img className="map-poster" src="/maps/taiwan-overview.webp" alt="OpenStreetMap basemap of Taiwan and its surrounding coast." width="1200" height="800" />
-        <details className="map-static-photos"><summary>Media and dates</summary>{photos.map(({ photo, place, date }) => <a key={photo.id} href={photo.original?.src ?? photo.src}>{place} · <time dateTime={date}>{tripDate(date)}</time></a>)}{trip.stops.flatMap(stop => stop.videos?.map(video => <a key={video.id} href={video.original?.src ?? video.src}>{stop.place} · <time dateTime={stop.date ?? trip.month}>{tripDate(stop.date ?? trip.month)}</time> · video</a>) ?? [])}</details>
+        <details className="map-static-photos"><summary>Media and dates</summary>{media.map(item => <a key={item.id} href={item.media.original?.src ?? item.media.src}>{item.place} · <time dateTime={item.date}>{tripDate(item.date)}</time>{item.kind === 'video' && ' · video'}</a>)}</details>
         <small className="map-static-credit"><a href="https://protomaps.com">Protomaps</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://esa-worldcover.org/en/data-access">ESA WorldCover</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)</small>
       </div>
       {visible && !failed && <MapBoundary onFailure={onMapFailure}><MapLibreTripMap trip={trip} activeVideo={clip?.video} playbackTime={playbackTime} onReady={onMapReady} onFailure={onMapFailure} onPhoto={photo => {

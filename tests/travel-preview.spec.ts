@@ -156,6 +156,22 @@ test('strip and exact pins link both ways, keyboard steps and a second activatio
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 
+test('arrow keys in the photo viewer follow date order like the strip', async ({ page }) => {
+  await ready(page);
+  const stripPhotos = await page.locator('.map-strip-card[data-kind="photo"] time').allTextContents();
+  await openMedia(page, 'taipei-evening');
+  const dialog = page.getByRole('dialog');
+  const seen = [await dialog.locator('time').textContent()];
+  for (let step = 1; step < stripPhotos.length; step++) {
+    await page.keyboard.press('ArrowRight');
+    await expect(dialog.locator('nav span')).toHaveText(`${step + 1} / ${stripPhotos.length}`);
+    seen.push(await dialog.locator('time').textContent());
+  }
+  expect(seen).toEqual(stripPhotos);
+  const days = seen.map(text => Date.parse(text!));
+  expect(days).toEqual(days.toSorted((first, second) => first - second));
+});
+
 test('swiping the native strip selects a card and its exact pin', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
   const page = await context.newPage();
@@ -222,7 +238,8 @@ test('individual photo cards show the actual date and open the native viewer', a
   await expect(dialog.getByRole('heading')).toHaveText('Hualien area');
   await expect(dialog.locator('time')).toHaveText('17 Oct 2026');
   await dialog.getByRole('button', { name: 'next' }).click();
-  await expect(dialog.getByRole('button', { name: 'next' })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'next' })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'close' })).toBeFocused();
   const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   expect(audit.violations, JSON.stringify(audit.violations, null, 2)).toEqual([]);
   await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible(); await expect(link).toBeFocused();

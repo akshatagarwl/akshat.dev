@@ -38,8 +38,7 @@ export default function MapLibreTripMap({
     center: [number, number]; zoom: number; bearing: number; pitch: number;
     padding: ReturnType<MapRef['getPadding']>;
   } | null>(null);
-  const media = useMemo(() => tripMedia(trip).toSorted((first, second) =>
-    first.date.localeCompare(second.date)), [trip]);
+  const media = useMemo(() => tripMedia(trip), [trip]);
   const located = media.filter((item): item is LocatedMedia => item.gps !== undefined);
 
   const strip = useRef<HTMLDivElement>(null);

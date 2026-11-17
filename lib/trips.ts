@@ -46,6 +46,7 @@ export type TripMapItem = {
   id: string; stopId: string; place: string; date: string; gps?: RecordedGps;
 } & ({ kind: 'photo'; media: TripPhoto } | { kind: 'video'; media: TripVideo });
 
+/** All photos and videos in date order; items on the same date keep their record order. */
 export function tripMedia(trip: Trip): TripMapItem[] {
   return trip.stops.flatMap(stop => {
     const context = { stopId: stop.id, place: stop.place, date: stop.date ?? trip.month };
@@ -57,7 +58,7 @@ export function tripMedia(trip: Trip): TripMapItem[] {
         ...context, id: media.id, gps: media.gps, kind: 'video' as const, media,
       })),
     ];
-  });
+  }).toSorted((first, second) => first.date.localeCompare(second.date));
 }
 
 export function videoDuration(seconds: number) { const whole = Math.ceil(seconds); return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`; }
