@@ -47,13 +47,21 @@ for (const path of [...paths].sort()) {
   const key = `draft/media/${sha256}.${match[2]}`, type = { webp: 'image/webp', mp4: 'video/mp4', vtt: 'text/vtt; charset=utf-8' }[match[2]]!;
   let status = size > 300_000_000 ? 'needs-s3-multipart' : 'planned';
   if (process.argv.includes('--images-only') && match[2] !== 'webp' && status === 'planned') status = 'deferred-video';
-  if (upload && status === 'planned') {
+  const existing = remote.get(key);
+  if (upload && (status === 'planned' || existing)) {
     try {
-    const object = remote.get(key) ?? cf(['r2', 'objects', 'put', key, '--bucket-name', bucket, '--file', source, '--content-type', type, '--content-length', String(size)]);
-    if (Number(object.size) !== size || String(object.etag).replaceAll('"', '') !== expected) throw new Error('R2 size/ETag integrity verification failed.');
-    const contentType = object.httpMetadata?.contentType ?? object.http_metadata?.content_type;
-    if (contentType && contentType !== type) throw new Error('R2 content type differs from the sanitized asset.');
-    status = 'verified-private';
+      const object = existing ?? cf([
+        'r2', 'objects', 'put', key, '--bucket-name', bucket, '--file', source,
+        '--content-type', type, '--content-length', String(size),
+      ]);
+      const matchesSize = Number(object.size) === size;
+      const matchesHash = String(object.etag).replaceAll('"', '') === expected;
+      if (!matchesSize || !matchesHash) throw new Error('R2 size/ETag integrity verification failed.');
+      const contentType = object.httpMetadata?.contentType ?? object.http_metadata?.content_type;
+      if (contentType && contentType !== type) {
+        throw new Error('R2 content type differs from the sanitized asset.');
+      }
+      status = 'verified-private';
     } catch (error) {
       status = 'upload-failed';
       process.exitCode = 1;
