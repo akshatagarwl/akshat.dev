@@ -2,7 +2,7 @@
 // Uses cf's existing login; no credentials are copied into this repo or sent to browsers.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import { readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import { parseTrips, photoSrcSet } from '../lib/trips';
@@ -10,6 +10,19 @@ if (process.env.CI || process.env.WORKERS_CI) throw new Error('Private media can
 const upload = process.argv.includes('--upload'), bucket = process.env.TRAVEL_R2_BUCKET;
 if (!bucket || !/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket)) throw new Error('Set TRAVEL_R2_BUCKET to the dedicated private bucket. Default is a local dry run; --upload performs the write.');
 const cf = (args: string[]) => { const json = JSON.parse(execFileSync('cf', args, { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 })); if (json.success === false) throw new Error('Cloudflare rejected the request.'); return json.result ?? json; };
+type ReadbackVerification = {
+  method: string;
+  verifiedAt: string;
+  size: number;
+  sha256: string;
+  md5: string;
+  multipartEtag: string;
+};
+const manifestPath = '.generated/travel-draft/r2-manifest.json';
+const previous: { key: string; bucket: string; verification?: ReadbackVerification }[] =
+  existsSync(manifestPath) ? JSON.parse(await readFile(manifestPath, 'utf8')) : [];
+const bucketAssets = previous.filter(asset => asset.bucket === bucket);
+const readbacks = new Map(bucketAssets.map(asset => [asset.key, asset.verification]));
 let remote = new Map<string, { size: number; etag: string }>();
 if (upload) {
   const managed = cf(['r2', 'buckets', 'domains', 'managed', 'list', '--bucket-name', bucket]);
@@ -48,6 +61,7 @@ for (const path of [...paths].sort()) {
   let status = size > 300_000_000 ? 'needs-s3-multipart' : 'planned';
   if (process.argv.includes('--images-only') && match[2] !== 'webp' && status === 'planned') status = 'deferred-video';
   const existing = remote.get(key);
+  let verification: ReadbackVerification | undefined;
   if (upload && (status === 'planned' || existing)) {
     try {
       const object = existing ?? cf([
@@ -55,8 +69,19 @@ for (const path of [...paths].sort()) {
         '--content-type', type, '--content-length', String(size),
       ]);
       const matchesSize = Number(object.size) === size;
-      const matchesHash = String(object.etag).replaceAll('"', '') === expected;
-      if (!matchesSize || !matchesHash) throw new Error('R2 size/ETag integrity verification failed.');
+      const etag = String(object.etag).replaceAll('"', '');
+      const multipart = /^[a-f0-9]{32}-[1-9][0-9]*$/i.test(etag);
+      if (!matchesSize) throw new Error('R2 size integrity verification failed.');
+      if (multipart) {
+        verification = readbacks.get(key);
+        const matchesReadback = verification?.size === size && verification.sha256 === sha256
+          && verification.md5 === expected && verification.multipartEtag === etag;
+        if (!matchesReadback) {
+          throw new Error(
+            'Multipart ETag is not MD5; full authenticated SHA256/MD5 readback proof is required.',
+          );
+        }
+      } else if (etag !== expected) throw new Error('R2 ETag integrity verification failed.');
       const contentType = object.httpMetadata?.contentType ?? object.http_metadata?.content_type;
       if (contentType && contentType !== type) {
         throw new Error('R2 content type differs from the sanitized asset.');
@@ -68,7 +93,10 @@ for (const path of [...paths].sort()) {
       console.error(`Could not verify private upload for ${match[1]}:`, error);
     }
   }
-  manifest.push({ path, bucket, key, sha256, md5: expected, size, contentType: type, status });
+  manifest.push({
+    path, bucket, key, sha256, md5: expected, size, contentType: type, status,
+    ...(verification ? { verification } : {}),
+  });
   await writeFile('.generated/travel-draft/r2-manifest.json', JSON.stringify(manifest, null, 2), { mode: 0o600 });
   console.log(`${status}: ${match[1]} (${size} bytes)`);
 }
