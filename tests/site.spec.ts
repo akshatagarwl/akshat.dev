@@ -38,6 +38,41 @@ test('no selectors, less copy, original links and light mode without external re
   expect(errors).toEqual([]); expect(external).toEqual([]);
 });
 
+test('Allo is self-hosted, variable, licensed and the only preloaded font', async ({ page, request }) => {
+  const fontPath = '/fonts/allo/AlloVariable.woff2';
+  const packageFont = readFileSync('node_modules/allo-font/fonts/webfonts/AlloVariable.woff2');
+  const response = await request.get(fontPath);
+  expect(response.ok()).toBe(true);
+  expect(await response.body()).toEqual(packageFont);
+  const license = await request.get('/licenses/allo.txt');
+  expect(await license.text()).toBe(readFileSync('node_modules/allo-font/OFL.txt', 'utf8'));
+
+  for (const path of ['/', '/tv', '/qin']) {
+    await page.goto(path);
+    await page.evaluate(() => document.fonts.ready);
+    const preload = page.locator('link[rel="preload"][as="font"]');
+    await expect(preload).toHaveCount(1);
+    await expect(preload).toHaveAttribute('href', fontPath);
+    await expect(preload).toHaveAttribute('crossorigin', /^(anonymous)?$/);
+    const typography = await page.locator('body').evaluate(element => {
+      const style = getComputedStyle(element);
+      const font = [...document.fonts].find(face => face.family === 'Allo');
+      if (!font) throw new Error('Allo is absent from document.fonts.');
+      return {
+        family: style.fontFamily, variations: style.fontVariationSettings,
+        opticalSizing: style.fontOpticalSizing,
+        weight: font.weight, display: font.display, status: font.status,
+      };
+    });
+    expect(typography.family).toBe('Allo, "DM Sans Variable", system-ui, sans-serif');
+    expect(typography.variations).toBe('"ROND" 50');
+    expect(typography.opticalSizing).toBe('auto');
+    expect(typography.weight).toBe('100 900');
+    expect(typography.display).toBe('swap');
+    expect(typography.status).toBe('loaded');
+  }
+});
+
 test('old theme preferences have no effect on home or notes', async ({ page }) => {
   await page.addInitScript(() => { localStorage.setItem('akshat.environment.v1', 'circuit'); localStorage.setItem('akshat.appearance.v1', 'dark'); });
   await ready(page);

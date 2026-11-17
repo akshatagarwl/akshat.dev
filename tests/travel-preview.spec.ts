@@ -38,6 +38,16 @@ test('maintained MapLibre component is the only travel surface and dates are vis
   await expect(page.locator('.maplibregl-canvas')).toBeVisible();
   await expect(page.locator('.trip-pages, .trip-stop, .trip-masthead, .map-geography')).toHaveCount(0);
   await expect(page.locator('.map-caption > time')).toHaveText('Oct 2026');
+  const fontPreload = page.locator('link[rel="preload"][as="font"]');
+  await expect(fontPreload).toHaveCount(1);
+  await expect(fontPreload).toHaveAttribute('href', '/fonts/allo/AlloVariable.woff2');
+  const labels = ['.map-caption h1', '.map-caption > time', '.maplibregl-map', '.map-cluster-marker'];
+  for (const selector of labels) {
+    const family = await page.locator(selector).first().evaluate(element => {
+      return getComputedStyle(element).fontFamily;
+    });
+    expect(family.split(',')[0]).toBe('Allo');
+  }
   await expect(page.locator('.map-cluster-marker')).not.toHaveCount(0);
   await expect(page.locator('.map-cluster-marker').first()).toHaveAccessibleName(/Oct 2026/);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);

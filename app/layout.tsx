@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { preload } from 'react-dom';
 import '@fontsource-variable/dm-sans';
 import '@fontsource-variable/newsreader';
 import '@fontsource/ibm-plex-mono/latin-400.css';
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  preload('/fonts/allo/AlloVariable.woff2', { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   return <html lang="en" data-appearance="light">
     <body>
       <a className="skip-link" href="#main">Skip to content</a>

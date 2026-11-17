@@ -1,11 +1,21 @@
+@font-face {
+  font-family: 'Allo';
+  src: url('/fonts/allo/AlloVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   color-scheme: light;
+  --font-allo: 'Allo';
   --paper: #f6f4eb;
   --ink: #30352e;
   --muted: #64675a;
   --accent: #426344;
   --line: #dcded0;
-  font-family: 'DM Sans Variable', system-ui, sans-serif;
+  font-family: var(--font-allo), 'DM Sans Variable', system-ui, sans-serif;
+  font-optical-sizing: auto;
+  font-variation-settings: 'ROND' 50;
   font-size: 16px;
   background: var(--paper);
   color: var(--ink);
@@ -24,7 +34,7 @@ button:disabled { cursor: default; }
 .site-shell { position: relative; max-width: 640px; margin: 0 auto; padding: 38px 0 30px; }
 .site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 60px; }
 .site-brand { font-size: 12px; text-decoration: none; white-space: nowrap; }
-h1, h2 { font-family: 'Newsreader Variable', Georgia, serif; font-weight: 450; letter-spacing: -.035em; }
+h1, h2 { font-family: var(--font-allo), 'Newsreader Variable', Georgia, serif; font-weight: 450; letter-spacing: -.035em; }
 h1 { font-size: 44px; line-height: 1.1; margin: 0 0 14px; }
 h2 { font-size: 28px; line-height: 1.2; margin: 0 0 18px; }
 p { margin: 0 0 16px; }
@@ -77,11 +87,11 @@ p { margin: 0 0 16px; }
 .travel-entry:nth-child(3n + 2) .travel-waypoint { --accent: #ae7ebc; }
 .travel-entry:nth-child(3n) .travel-waypoint { --accent: #d39c38; }
 .diary-page { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 16px; padding-top: 8px; }
-.diary-date { position: sticky; top: 254px; align-self: start; margin-top: 5px; font: 10px/1.7 'IBM Plex Mono', monospace; color: var(--muted); }
+.diary-date { position: sticky; top: 254px; align-self: start; margin-top: 5px; font: 10px/1.7 var(--font-allo), 'IBM Plex Mono', monospace; color: var(--muted); }
 .diary-content { min-width: 0; }
 .diary-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; }
 .diary-heading > svg { flex-shrink: 0; align-self: start; margin-top: 3px; color: var(--accent); }
-.diary-heading h3 { margin: 0; font: 450 26px/1.15 'Newsreader Variable', Georgia, serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.diary-heading h3 { margin: 0; font: 450 26px/1.15 var(--font-allo), 'Newsreader Variable', Georgia, serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .travel-region { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
 .diary-note { font-size: 14px; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
 .travel-photos { display: grid; grid-auto-flow: column; grid-auto-columns: 88%; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; scroll-margin-top: 254px; padding: 4px 3px 12px; margin: 0 -3px; }
@@ -113,7 +123,7 @@ p { margin: 0 0 16px; }
 }
 .note-page h1 { margin: 20px 0; font-size: 40px; }
 .back-link { display: inline-block; padding: 5px 0; font-size: 13px; }
-.eyebrow { font: 10px/1.5 'IBM Plex Mono', monospace; color: var(--muted); margin: 20px 0 0; }
+.eyebrow { font: 10px/1.5 var(--font-allo), 'IBM Plex Mono', monospace; color: var(--muted); margin: 20px 0 0; }
 .agent-notice { border-left: 2px solid var(--accent); padding: 4px 0 4px 18px; margin-bottom: 40px; font-size: 13px; }
 .agent-notice p { margin: 5px 0 0; color: var(--muted); }
 .note-body { font-size: 15px; overflow-wrap: anywhere; }
@@ -122,7 +132,7 @@ p { margin: 0 0 16px; }
 .note-body ul, .note-body ol { padding-left: 24px; }
 .note-body li { margin: 7px 0; }
 .note-body pre { overflow: auto; padding: 16px; background: #eae7dc; font-size: 12px; border-radius: 3px; }
-.note-body code { font-family: 'IBM Plex Mono', monospace; font-size: .85em; }
+.note-body code { font-family: var(--font-allo), 'IBM Plex Mono', monospace; font-size: .85em; }
 .note-body blockquote { margin-left: 0; border-left: 2px solid var(--line); padding-left: 20px; }
 .note-body table { display: block; overflow: auto; border-collapse: collapse; }
 .note-body td, .note-body th { padding: 8px; border: 1px solid var(--line); }
