@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import sharp from 'sharp';
 import { existsSync, readFileSync } from 'node:fs';
-import { videoPosition } from '../lib/trips';
+import { parseTrips, tripMedia, videoPosition } from '../lib/trips';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const trip = '/travels/taiwan';
@@ -159,20 +159,61 @@ test('strip and exact pins link both ways, keyboard steps and a second activatio
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 
-test('arrow keys in the photo viewer follow date order like the strip', async ({ page }) => {
+test('arrow keys navigate every photo and video in strip order in both directions', async ({ page }) => {
   await ready(page);
-  const stripPhotos = await page.locator('.map-strip-card[data-kind="photo"] time').allTextContents();
-  await openMedia(page, 'taipei-evening');
-  const dialog = page.getByRole('dialog');
-  const seen = [await dialog.locator('time').textContent()];
-  for (let step = 1; step < stripPhotos.length; step++) {
+  const sequence = tripMedia(parseTrips([draft])[0]);
+  const assertItem = async (index: number) => {
+    const item = sequence[index];
+    const panel = page.locator(item.kind === 'photo' ? '.photo-viewer' : '.video-viewer');
+    await expect(panel).toBeVisible();
+    await expect(pin(page, item.id)).toHaveAttribute('aria-pressed', 'true');
+    await expect(panel.locator('nav span')).toHaveText(`${index + 1} / ${sequence.length}`);
+    await expect(panel.getByRole('button', { name: 'previous', exact: true })).toHaveJSProperty('disabled', index === 0);
+    await expect(panel.getByRole('button', { name: 'next', exact: true })).toHaveJSProperty('disabled', index === sequence.length - 1);
+    if (item.kind === 'video') {
+      await expect(page.getByRole('dialog')).not.toBeVisible();
+      await expect(panel.locator('video')).toHaveAttribute('aria-label', item.media.title);
+      await expect(panel.locator('video')).toHaveJSProperty('paused', true);
+      await expect(panel.locator('video')).toHaveAttribute('preload', 'none');
+    } else {
+      await expect(page.locator('video')).toHaveCount(0);
+      await expect(panel.locator('figure img')).toHaveAttribute('alt', item.media.alt);
+    }
+  };
+  await openMedia(page, sequence[0].id);
+  await assertItem(0);
+  for (let index = 1; index < sequence.length; index++) {
     await page.keyboard.press('ArrowRight');
-    await expect(dialog.locator('nav span')).toHaveText(`${step + 1} / ${stripPhotos.length}`);
-    seen.push(await dialog.locator('time').textContent());
+    await assertItem(index);
   }
-  expect(seen).toEqual(stripPhotos);
-  const days = seen.map(text => Date.parse(text!));
-  expect(days).toEqual(days.toSorted((first, second) => first - second));
+  for (let index = sequence.length - 2; index >= 0; index--) {
+    await page.keyboard.press('ArrowLeft');
+    await assertItem(index);
+  }
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(card(page, sequence[0].id)).toBeFocused();
+});
+
+test('media navigation stops outgoing video while native video arrows retain their controls', async ({ page }) => {
+  await ready(page);
+  await openMedia(page, 'coast-ride');
+  const video = page.locator('video');
+  await video.evaluate((element: HTMLVideoElement) => element.play());
+  await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeGreaterThan(.2);
+  const outgoing = (await video.elementHandle())!;
+  await video.focus();
+  await page.keyboard.press('ArrowRight');
+  const coast = tripMedia(parseTrips([draft])[0]).find(item => item.id === 'coast-ride')!;
+  await expect(video).toHaveAttribute('aria-label', coast.kind === 'video' ? coast.media.title : '');
+  await page.locator('.video-viewer').getByRole('button', { name: 'next', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.locator('video')).toHaveCount(0);
+  expect(await outgoing.evaluate((element: HTMLVideoElement) => element.paused && !element.isConnected)).toBe(true);
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.locator('.video-viewer')).toBeVisible();
+  await expect(page.locator('video')).toHaveJSProperty('currentTime', 0);
+  await expect(page.locator('video')).toHaveJSProperty('paused', true);
 });
 
 test('swiping the native strip selects a card and its exact pin', async ({ browser }) => {
@@ -238,9 +279,11 @@ test('individual photo cards show the actual date and open the native viewer', a
   await expect(dialog.locator('time')).toHaveText('20 Oct 2026');
   await expect(dialog.getByRole('button', { name: 'close' })).toBeFocused();
   await page.keyboard.press('ArrowLeft');
-  await expect(dialog.getByRole('heading')).toHaveText('Hualien area');
-  await expect(dialog.locator('time')).toHaveText('17 Oct 2026');
-  await dialog.getByRole('button', { name: 'next' }).click();
+  const player = page.locator('.video-viewer');
+  await expect(dialog).not.toBeVisible();
+  await expect(player.getByRole('heading')).toHaveText('Hualien area');
+  await expect(player.locator('time')).toHaveText('17 Oct 2026');
+  await player.getByRole('button', { name: 'next', exact: true }).click();
   await expect(dialog.getByRole('button', { name: 'next' })).toBeDisabled();
   await expect(dialog.getByRole('button', { name: 'close' })).toBeFocused();
   const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();

@@ -64,8 +64,8 @@
 .photo-viewer figure { margin: 0; }
 .photo-viewer img { display: block; width: 100%; height: auto; max-height: calc(100svh - 225px); object-fit: contain; }
 .photo-viewer figcaption { font-size: 12px; text-align: center; margin-top: 10px; }
-.photo-viewer nav { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; gap: 20px; }
-.photo-viewer nav span { font: 11px var(--font-allo), 'IBM Plex Mono', monospace; color: var(--muted); }
+.photo-viewer nav, .video-viewer nav { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; gap: 20px; }
+.photo-viewer nav span, .video-viewer nav span { font: 11px var(--font-allo), 'IBM Plex Mono', monospace; color: var(--muted); }
 .map-caption h1, .map-caption h2, .video-viewer h2 { font-variation-settings: 'opsz' 32, 'ROND' 70; }
 .map-caption > time, .map-caption small, .map-photo-marker time,
 .video-viewer time, .photo-viewer time, .photo-viewer nav span,

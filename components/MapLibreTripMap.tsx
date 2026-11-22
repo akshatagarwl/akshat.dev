@@ -26,14 +26,14 @@ function loadArchive() {
 }
 
 type Props = {
-  trip: Trip; activeVideo?: TripVideo; playbackTime: number;
+  trip: Trip; activeVideo?: TripVideo; activeMediaId?: string; playbackTime: number;
   onPhoto: (photo: TripPhoto) => void; onVideo: (video: TripVideo) => void;
   onReady: () => void; onFailure: () => void;
 };
 type LocatedMedia = TripMapItem & { gps: RecordedGps };
 
 export default function MapLibreTripMap({
-  trip, activeVideo, playbackTime, onPhoto, onVideo, onReady, onFailure,
+  trip, activeVideo, activeMediaId, playbackTime, onPhoto, onVideo, onReady, onFailure,
 }: Props) {
   const ref = useRef<MapRef>(null);
   const previousView = useRef<{
@@ -66,7 +66,7 @@ export default function MapLibreTripMap({
     }
 
     const map = ref.current;
-    if (!map || !item.gps || activeVideo) return;
+    if (!map || !item.gps || activeVideo?.track) return;
     const point = map.project(item.gps), container = map.getContainer();
     const crowded = located.filter(other => other.id !== item.id &&
       maplibre.LngLat.convert(item.gps!).distanceTo(maplibre.LngLat.convert(other.gps)) < 12000);
@@ -80,6 +80,11 @@ export default function MapLibreTripMap({
       map.panTo(item.gps, { duration: 0 });
     }
   };
+
+  useEffect(() => {
+    const item = media.find(item => item.id === activeMediaId);
+    if (item) select(item, true);
+  }, [activeMediaId]);
 
   const step = (item: TripMapItem, direction: number) => {
     const index = Math.max(0, Math.min(media.length - 1, media.indexOf(item) + direction));
