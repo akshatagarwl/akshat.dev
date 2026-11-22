@@ -33,7 +33,7 @@ test('maintained MapLibre component is the only travel surface and dates are vis
   page.on('response', r => { if (r.status() >= 400) failures.push(r.url()); });
   await page.goto('/');
   await expect(page.locator('.trip-map, #travels')).toHaveCount(0);
-  await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' }).click();
+  await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'gallery', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'gallery', exact: true })).toBeVisible();
   await page.locator('#travels .trip-cover[href="/travels/taiwan"]').click();
   await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');

@@ -23,7 +23,7 @@ async function diaryFixture(page: Page) {
 
 async function approvedFallback(page: Page) {
   if (!approvedTrips.length) return;
-  await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' }).click();
+  await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'gallery', exact: true }).click();
   await expect(page).toHaveURL(/\/travels$/);
   await expect(page.locator('.trip-map')).toHaveCount(approvedTrips.length);
   for (const trip of approvedTrips) {
@@ -64,7 +64,7 @@ test('no selectors, less copy, original links and light mode without external re
   expect((await page.locator('main').innerText()).split(/\s+/).length).toBeLessThan(210);
   await expect(page.locator('#notes')).toContainText('agent notes — not for human eyes');
   await expect(page.locator('#travels, .trip-gallery, .trip-map, .maplibregl-canvas')).toHaveCount(0);
-  const gallery = page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' });
+  const gallery = page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'gallery', exact: true });
   await expect(gallery).toHaveCount(approvedTrips.length ? 1 : 0);
   if (approvedTrips.length) await expect(gallery).toHaveAttribute('href', '/travels');
   await expect(page.locator('.travel-entry')).toHaveCount(0);
@@ -75,7 +75,8 @@ test('no selectors, less copy, original links and light mode without external re
 test('Gallery navigation works by keyboard and keeps trips off the homepage', async ({ page }) => {
   test.skip(!approvedTrips.length, 'No approved gallery to navigate.');
   await ready(page);
-  const gallery = page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' });
+  const gallery = page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'gallery', exact: true });
+  await expect(gallery).toHaveText('gallery');
   const typography = (element: Element) => {
     const style = getComputedStyle(element);
     return { size: style.fontSize, family: style.fontFamily, weight: style.fontWeight };
@@ -174,7 +175,7 @@ test('published Bali keeps exact dates, reviewed framing and only the recorded t
 
 test('published regional photo popups contain only the place and date', async ({ page }) => {
   test.setTimeout(60_000);
-  for (const id of ['bali', 'siquijor', 'amritsar']) {
+  for (const id of ['bali', 'siquijor', 'amritsar', 'manali']) {
     const trip = approvedTrips.find(item => item.id === id)!;
     const item = tripMedia(trip).find(media => media.gps)!;
     await page.goto(`/travels/${id}`);
@@ -191,6 +192,13 @@ test('published regional photo popups contain only the place and date', async ({
       expect(item.media.original).toMatchObject({ width: 3024, height: 4032 });
       await expect(region.locator('.map-exact-pin')).toHaveCount(1);
       await expect(region.locator('.map-strip-card')).toHaveCount(1);
+    }
+    if (id === 'manali') {
+      expect(item.date).toBe('2026-02-08');
+      expect(item.place).toBe('Old Manali');
+      expect('alt' in item.media && item.media.alt).toContain('AeroPress at the left edge');
+      expect(item.media.original).toMatchObject({ width: 3173, height: 4798 });
+      await expect(region.locator('.map-exact-pin')).toHaveCount(1);
     }
     await expect(details.getByRole('link')).toHaveCount(0);
     await expect(details).not.toContainText('Recorded photo GPS');

@@ -8,7 +8,27 @@ const trips = parseTrips(JSON.parse(readFileSync('.generated/travel-draft/trips.
 const fixtures = [
   { id: 'siquijor', label: 'Siquijor', date: '2025-12-29', dateText: '29 Dec 2025', place: 'San Juan', alt: /palm.*boat/ },
   { id: 'amritsar', label: 'Amritsar', date: '2026-06-05', dateText: '5 Jun 2026', place: 'Golden Temple', alt: /Golden Temple.*reflection/ },
+  { id: 'manali', label: 'Manali', date: '2026-02-08', dateText: '8 Feb 2026', place: 'Old Manali', alt: /Snowy mountains.*AeroPress.*left edge/ },
 ];
+
+function projectPoint(matrix: number[][], point: number[]) {
+  const values = matrix.map(row => row[0] * point[0] + row[1] * point[1] + row[2]);
+  return [values[0] / values[2], values[1] / values[2]];
+}
+
+test('Manali crop keeps the unmoved product half out of frame and the sill level', () => {
+  test.skip(!trips.some(trip => trip.id === 'manali'), 'No local Manali edit is staged.');
+  const edit = JSON.parse(readFileSync('.generated/travel-draft/manali/provenance.json', 'utf8'));
+  const matrix = edit.perspectiveMatrixCanonical1000;
+  const axis = edit.alignmentLandmarksCanonical.productAxis.map((point: number[]) => projectPoint(matrix, point));
+  const sill = edit.alignmentLandmarksCanonical.sill.map((point: number[]) => projectPoint(matrix, point));
+  expect(Math.abs(axis[0][0] - axis[1][0])).toBeLessThan(0.01);
+  expect(Math.abs(sill[0][1] - sill[1][1])).toBeLessThan(0.01);
+  expect(edit.foregroundTranslationCanonicalPixels).toBe(0);
+  const croppedAxis = axis[0][0] - edit.cropCanonical[0];
+  const scale = edit.sourceDimensions[0] / 1000;
+  expect(Math.abs(croppedAxis * scale)).toBeLessThan(1);
+});
 
 for (const fixture of fixtures) {
   const trip = trips.find(item => item.id === fixture.id);

@@ -7,6 +7,7 @@ test('trip ids select regional maps without inspecting or inventing photo GPS', 
   assert.equal(getMapRegion('taiwan'), mapRegions.taiwan);
   assert.equal(getMapRegion('siquijor'), mapRegions.siquijor);
   assert.equal(getMapRegion('amritsar'), mapRegions.amritsar);
+  assert.equal(getMapRegion('manali'), mapRegions.manali);
   assert.equal(getMapRegion('toString'), mapRegions.taiwan);
   assert.equal(getMapRegion('legacy-trip'), mapRegions.taiwan);
   assert.equal(getMapRegion('bali', 'taiwan'), mapRegions.taiwan);
@@ -14,6 +15,8 @@ test('trip ids select regional maps without inspecting or inventing photo GPS', 
   assert.equal(getMapRegion('siquijor', 'bali'), mapRegions.bali);
   assert.equal(getMapRegion('legacy-trip', 'amritsar'), mapRegions.amritsar);
   assert.equal(getMapRegion('amritsar', 'taiwan'), mapRegions.taiwan);
+  assert.equal(getMapRegion('legacy-trip', 'manali'), mapRegions.manali);
+  assert.equal(getMapRegion('manali', 'taiwan'), mapRegions.taiwan);
 });
 
 test('regional archives and PMTiles FileSource cache keys remain distinct', () => {
@@ -54,6 +57,20 @@ test('Amritsar uses a detailed city archive and generic city overview', () => {
   assert.equal(region.archiveKey, 'amritsar.pmtiles');
   assert.equal(region.poster, '/maps/amritsar-overview.webp');
   assert.equal(region.posterAlt, 'OpenStreetMap basemap of Amritsar and its surrounding area.');
+});
+
+test('Manali uses a detailed regional archive and generic overview', () => {
+  const region = mapRegions.manali;
+  assert.equal(region.id, 'manali');
+  assert.equal(region.label, 'Manali');
+  assert.deepEqual(region.bounds, [77.12, 32.18, 77.23, 32.29]);
+  assert.deepEqual(region.maxBounds, [77.08, 32.13, 77.28, 32.34]);
+  assert.equal(region.minZoom, 11);
+  assert.equal(region.archiveMaxZoom, 13);
+  assert.equal(region.archive, '/maps/manali.pmtiles');
+  assert.equal(region.archiveKey, 'manali.pmtiles');
+  assert.equal(region.poster, '/maps/manali-overview.webp');
+  assert.equal(region.posterAlt, 'OpenStreetMap basemap of Manali and its surrounding area.');
 });
 
 test('Siquijor uses its own island overview and higher-detail archive zoom', () => {

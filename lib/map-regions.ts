@@ -1,4 +1,4 @@
-export type MapRegionId = 'taiwan' | 'bali' | 'siquijor' | 'amritsar';
+export type MapRegionId = 'taiwan' | 'bali' | 'siquijor' | 'amritsar' | 'manali';
 type Bounds = [number, number, number, number];
 export type MapRegion = {
   id: MapRegionId;
@@ -15,6 +15,7 @@ export type MapRegion = {
 
 const tripRegions = new Map<string, MapRegionId>([
   ['taiwan', 'taiwan'], ['bali', 'bali'], ['siquijor', 'siquijor'], ['amritsar', 'amritsar'],
+  ['manali', 'manali'],
 ]);
 
 export function getMapRegion(tripId: string, explicit?: MapRegionId): MapRegion {
@@ -41,6 +42,13 @@ export const mapRegions: Record<MapRegionId, MapRegion> = {
     poster: '/maps/amritsar-overview.webp',
     posterAlt: 'OpenStreetMap basemap of Amritsar and its surrounding area.',
     bounds: [74.80, 31.57, 74.97, 31.72], maxBounds: [74.75, 31.52, 75.02, 31.77], minZoom: 10,
+    archiveMaxZoom: 13,
+  },
+  manali: {
+    id: 'manali', label: 'Manali', archive: '/maps/manali.pmtiles', archiveKey: 'manali.pmtiles',
+    poster: '/maps/manali-overview.webp',
+    posterAlt: 'OpenStreetMap basemap of Manali and its surrounding area.',
+    bounds: [77.12, 32.18, 77.23, 32.29], maxBounds: [77.08, 32.13, 77.28, 32.34], minZoom: 11,
     archiveMaxZoom: 13,
   },
   siquijor: {

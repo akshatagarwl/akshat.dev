@@ -17,13 +17,21 @@ The owner approved publication of `/travels/siquijor` with the reviewed palm-and
 
 The image is leveled by one degree and minimally trimmed to remove rotated borders, keeping the palm, boat and beach. Responsive copies and the full-resolution 4183×5578 WebP have no EXIF/XMP/IPTC; the source export remains untouched and ignored. There is no visible caption. The native map popup shows only San Juan and the exact date, without GPS explanatory text or an external location link.
 
-Reviewed records are in `data/trips.json`; the sanitized responsive images and full-resolution cropped copy are in `public/travels/siquijor/`. Ordinary builds publish the approved Taiwan, Bali, Siquijor and Amritsar records. Original exports and provenance remain ignored and untouched. The Siquijor basemap is a generic, self-hosted Protomaps subset through zoom 12, not a custom map or a source of personal coordinates.
+Reviewed records are in `data/trips.json`; the sanitized responsive images and full-resolution cropped copy are in `public/travels/siquijor/`. Ordinary builds publish the approved Taiwan, Bali, Siquijor, Amritsar and Manali records. Original exports and provenance remain ignored and untouched. The Siquijor basemap is a generic, self-hosted Protomaps subset through zoom 12, not a custom map or a source of personal coordinates.
 
 ## Amritsar gallery
 
 The owner approved publication of `/travels/amritsar` with the reviewed Golden Temple night photograph, dated 5 June 2026 in Photos. The full 3024×4032 framing is retained, including the temple and reflection, without cropping, rotation or upscaling. Responsive and full-resolution WebPs are sanitized; the exported HEIC and Photos original remain untouched.
 
 The native pin uses the recorded GPS without replacing it with an inferred temple centre. The popup and photo dialog show Golden Temple and the exact date only, without GPS explanatory text, an external location link or a visible caption. The generic Amritsar basemap includes source data through zoom 13. Approved records are in `data/trips.json`; sanitized responsive and full-resolution copies are in `public/travels/amritsar/`. Original exports and private provenance remain ignored and untouched.
+
+## Manali gallery
+
+The owner approved publication of `/travels/manali`, which contains the owner-selected AeroPress/snowy-mountain photograph, dated 8 February 2026 in Photos. Recorded GPS reverse-geocodes to Old Manali, Himachal Pradesh, India. The map uses that unchanged captured point; popup and dialog show Old Manali and the exact date only.
+
+The owner rejected the earlier centered composite: symmetry meant clean lines, not object movement or heavy editing. The selected edit starts again from the original photo and uses only a single global perspective/level correction and an edge crop. The AeroPress remains at its original left-hand position, with about half its width outside the frame, keeping the mountains as the main subject. No compositing, masks, cloning, inpainting, generated content or color restyling is used. The 3173×4798 full-resolution edited copy and responsive WebPs are sanitized. The original HEIC and unedited export remain untouched. Active private provenance and `additions/img-6999/straighten.py` describe this faithful edit; the rejected `composition` artifacts must not be reused.
+
+The gallery uses a separate Manali basemap through zoom 13. Approved records are in `data/trips.json`; only the reviewed straightened/cropped responsive and full-resolution photographs are in `public/travels/manali/`. Source exports, provenance and rejected edits remain private.
 
 ## Existing components, not a custom map
 

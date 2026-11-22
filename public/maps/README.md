@@ -62,6 +62,17 @@ pmtiles verify public/maps/amritsar.pmtiles
 
 Archive: 1,628,165 bytes; SHA-256 `be066ab560003e4e48c6783dd1f5906c299c7886c6d7264be11a922ca1d62643`. `MAP_REGION=amritsar` renders its generic fallback poster without personal records.
 
+## Manali regional archive
+
+Source: https://build.protomaps.com/20261116.pmtiles . An unmodified regional subset of Manali through zoom 13, under the same data licenses and attribution above. Download: `/maps/manali.pmtiles`.
+
+```sh
+pmtiles extract https://build.protomaps.com/20261116.pmtiles public/maps/manali.pmtiles --bbox=77.08,32.13,77.28,32.34 --maxzoom=13
+pmtiles verify public/maps/manali.pmtiles
+```
+
+Archive: 1,218,691 bytes; SHA-256 `07ca619fe2e19a8cfa562c833c329c68f757b328c18cda8714c533669f0d6112`. `MAP_REGION=manali` renders its generic fallback poster without personal records.
+
 ## Styles, glyphs, sprites and worker
 
 Protomaps assets source revision: **`028c18f713baecad011301ff7a69acc39bcc2ae7`**, https://github.com/protomaps/basemaps-assets . Only the first four Latin glyph ranges for the three named fonts and existing v4 light sprite assets are copied. Non-English names without English/Latin alternatives are omitted, not invented or fetched remotely.

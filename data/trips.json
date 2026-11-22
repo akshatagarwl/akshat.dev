@@ -1245,5 +1245,53 @@
         "gps": [74.87645, 31.6208888888889]
       }]
     }]
+  },
+  {
+    "id": "manali",
+    "title": "Manali",
+    "month": "2026-02",
+    "cover": {
+      "id": "manali-aeropress",
+      "src": "/travels/manali/manali-aeropress-1800.webp",
+      "alt": "Snowy mountains and trees in Old Manali, with part of an AeroPress at the left edge.",
+      "caption": null,
+      "width": 1800,
+      "height": 2722,
+      "original": {
+        "src": "/travels/manali/manali-aeropress-original.webp",
+        "width": 3173,
+        "height": 4798
+      },
+      "gps": [
+        77.1795277777778,
+        32.2579083333333
+      ]
+    },
+    "stops": [
+      {
+        "id": "old-manali",
+        "place": "Old Manali",
+        "date": "2026-02-08",
+        "photos": [
+          {
+            "id": "manali-aeropress",
+            "src": "/travels/manali/manali-aeropress-1800.webp",
+            "alt": "Snowy mountains and trees in Old Manali, with part of an AeroPress at the left edge.",
+            "caption": null,
+            "width": 1800,
+            "height": 2722,
+            "original": {
+              "src": "/travels/manali/manali-aeropress-original.webp",
+              "width": 3173,
+              "height": 4798
+            },
+            "gps": [
+              77.1795277777778,
+              32.2579083333333
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]

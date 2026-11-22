@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <div className="site-shell">
         <header className="site-header">
           <a className="site-brand" href="/" aria-label="Akshat home">akshat.dev</a>
-          {readTrips().length > 0 && <nav aria-label="Main"><a href="/travels">Gallery</a></nav>}
+          {readTrips().length > 0 && <nav aria-label="Main"><a href="/travels">gallery</a></nav>}
         </header>
         <main id="main" data-content>{children}</main>
         <footer className="site-footer"><a href="https://github.com/akshatagarwl/akshat.dev" target="_blank" rel="noopener noreferrer">source</a><a href="https://github.com/VedSoni-dev/seedbed" target="_blank" rel="noopener noreferrer">garden by seedbed</a></footer>
