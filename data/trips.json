@@ -1215,5 +1215,35 @@
         "gps": [123.495016666667, 9.156]
       }]
     }]
+  },
+  {
+    "id": "amritsar",
+    "title": "Amritsar",
+    "month": "2026-06",
+    "cover": {
+      "id": "amritsar-golden-temple",
+      "src": "/travels/amritsar/amritsar-golden-temple-1800.webp",
+      "alt": "The illuminated Golden Temple and its reflection in the water at night, Amritsar.",
+      "caption": null,
+      "width": 1800,
+      "height": 2400,
+      "original": { "src": "/travels/amritsar/amritsar-golden-temple-original.webp", "width": 3024, "height": 4032 },
+      "gps": [74.87645, 31.6208888888889]
+    },
+    "stops": [{
+      "id": "golden-temple",
+      "place": "Golden Temple",
+      "date": "2026-06-05",
+      "photos": [{
+        "id": "amritsar-golden-temple",
+        "src": "/travels/amritsar/amritsar-golden-temple-1800.webp",
+        "alt": "The illuminated Golden Temple and its reflection in the water at night, Amritsar.",
+        "caption": null,
+        "width": 1800,
+        "height": 2400,
+        "original": { "src": "/travels/amritsar/amritsar-golden-temple-original.webp", "width": 3024, "height": 4032 },
+        "gps": [74.87645, 31.6208888888889]
+      }]
+    }]
   }
 ]

@@ -51,6 +51,17 @@ pmtiles verify public/maps/siquijor.pmtiles
 
 Archive: 824,113 bytes; SHA-256 `f1ef0d903def24ded58d779acc964b2d606eb5b0f773a35aedabd4ff8ee2d049`. `MAP_REGION=siquijor` renders its generic fallback poster without personal records. The region's source maximum zoom is configured explicitly; higher display zooms overzoom the available vectors.
 
+## Amritsar regional archive
+
+Source: https://build.protomaps.com/20261116.pmtiles . An unmodified regional subset of Amritsar through zoom 13, under the same data licenses and attribution above. Download: `/maps/amritsar.pmtiles`.
+
+```sh
+pmtiles extract https://build.protomaps.com/20261116.pmtiles public/maps/amritsar.pmtiles --bbox=74.75,31.52,75.02,31.77 --maxzoom=13
+pmtiles verify public/maps/amritsar.pmtiles
+```
+
+Archive: 1,628,165 bytes; SHA-256 `be066ab560003e4e48c6783dd1f5906c299c7886c6d7264be11a922ca1d62643`. `MAP_REGION=amritsar` renders its generic fallback poster without personal records.
+
 ## Styles, glyphs, sprites and worker
 
 Protomaps assets source revision: **`028c18f713baecad011301ff7a69acc39bcc2ae7`**, https://github.com/protomaps/basemaps-assets . Only the first four Latin glyph ranges for the three named fonts and existing v4 light sprite assets are copied. Non-English names without English/Latin alternatives are omitted, not invented or fetched remotely.

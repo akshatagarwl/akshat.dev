@@ -174,7 +174,7 @@ test('published Bali keeps exact dates, reviewed framing and only the recorded t
 
 test('published regional photo popups contain only the place and date', async ({ page }) => {
   test.setTimeout(60_000);
-  for (const id of ['bali', 'siquijor']) {
+  for (const id of ['bali', 'siquijor', 'amritsar']) {
     const trip = approvedTrips.find(item => item.id === id)!;
     const item = tripMedia(trip).find(media => media.gps)!;
     await page.goto(`/travels/${id}`);
@@ -185,6 +185,13 @@ test('published regional photo popups contain only the place and date', async ({
     await expect(details.locator(':scope > *')).toHaveCount(2);
     await expect(details.locator('strong')).toHaveText(item.place);
     await expect(details.locator('time')).toHaveAttribute('datetime', item.date);
+    if (id === 'amritsar') {
+      expect(item.date).toBe('2026-06-05');
+      expect(item.place).toBe('Golden Temple');
+      expect(item.media.original).toMatchObject({ width: 3024, height: 4032 });
+      await expect(region.locator('.map-exact-pin')).toHaveCount(1);
+      await expect(region.locator('.map-strip-card')).toHaveCount(1);
+    }
     await expect(details.getByRole('link')).toHaveCount(0);
     await expect(details).not.toContainText('Recorded photo GPS');
   }

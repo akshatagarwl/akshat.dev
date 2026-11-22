@@ -17,7 +17,13 @@ The owner approved publication of `/travels/siquijor` with the reviewed palm-and
 
 The image is leveled by one degree and minimally trimmed to remove rotated borders, keeping the palm, boat and beach. Responsive copies and the full-resolution 4183×5578 WebP have no EXIF/XMP/IPTC; the source export remains untouched and ignored. There is no visible caption. The native map popup shows only San Juan and the exact date, without GPS explanatory text or an external location link.
 
-Reviewed records are in `data/trips.json`; the sanitized responsive images and full-resolution cropped copy are in `public/travels/siquijor/`. Ordinary builds publish the approved Taiwan, Bali and Siquijor records. Original exports and provenance remain ignored and untouched. The Siquijor basemap is a generic, self-hosted Protomaps subset through zoom 12, not a custom map or a source of personal coordinates.
+Reviewed records are in `data/trips.json`; the sanitized responsive images and full-resolution cropped copy are in `public/travels/siquijor/`. Ordinary builds publish the approved Taiwan, Bali, Siquijor and Amritsar records. Original exports and provenance remain ignored and untouched. The Siquijor basemap is a generic, self-hosted Protomaps subset through zoom 12, not a custom map or a source of personal coordinates.
+
+## Amritsar gallery
+
+The owner approved publication of `/travels/amritsar` with the reviewed Golden Temple night photograph, dated 5 June 2026 in Photos. The full 3024×4032 framing is retained, including the temple and reflection, without cropping, rotation or upscaling. Responsive and full-resolution WebPs are sanitized; the exported HEIC and Photos original remain untouched.
+
+The native pin uses the recorded GPS without replacing it with an inferred temple centre. The popup and photo dialog show Golden Temple and the exact date only, without GPS explanatory text, an external location link or a visible caption. The generic Amritsar basemap includes source data through zoom 13. Approved records are in `data/trips.json`; sanitized responsive and full-resolution copies are in `public/travels/amritsar/`. Original exports and private provenance remain ignored and untouched.
 
 ## Existing components, not a custom map
 
