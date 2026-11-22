@@ -2,6 +2,15 @@
 
 Current owner direction: **add dates, keep only the map, reuse existing map components**. The earlier custom Three.js map and separate journal have been removed. Never invent journeys, dates, diary prose or photographs.
 
+## Bali gallery
+
+The owner approved publication of Bali's two reviewed photographs, exact photo dates and temple GPS pin. Approved records are in `data/trips.json`; sanitized responsive and full-resolution cropped copies are in `public/travels/bali/`. The gallery is `/travels/bali`. Ordinary builds include only approved records; ignored source exports, recovery copies and private drafts remain local.
+
+- The temple portrait, dated 30 May 2026 in Photos, is cropped to remove the shoes; the Photos original and exported source copies remain untouched. Its recorded GPS is used with the owner's explicit permission. Reverse-geocoded OpenStreetMap data places it at the Gates of Heaven; Indonesia's official tourism site confirms Pura Penataran Agung Lempuyang in Tri Buana, Abang, Karangasem. The standard library popup shows only the temple name (Pura Penataran Agung Lempuyang), exact date and a link to the recorded point on OpenStreetMap; the full locality is not displayed.
+- The mountain photograph, dated 27 May 2026 in Photos, is cropped from 1080×1920 to 1080×1700: a little excess sky is removed while the full original width, laptop screen and coffee foreground are retained. No rotation, perspective skew, mirroring, invented content or upscaling was needed. Neither its file nor Photos has a recorded location, so it has no inferred pin. Both photos retain factual alt text but no visible captions.
+- Both use sanitized responsive WebPs and a sanitized original-resolution WebP in the existing native photo dialog. Source exports and private provenance remain ignored local assets; only the owner-approved sanitized photographs and recorded temple GPS are published. No photographs or captured GPS are stored in the public regional-map configuration.
+- Bali and Taiwan use distinct self-hosted Protomaps archives and cache keys, with region-specific fit controls and generic fallback posters. Public basemap provenance is in `public/maps/README.md`.
+
 ## Existing components, not a custom map
 
 - **react-map-gl 8.1.3** composes MapLibre's Map, Marker, Popup, NavigationControl and ScaleControl. **MapLibre GL 6.18.0** owns rendering, interaction, resource cleanup and reduced-motion behavior. There is no site-built renderer, projection, terrain, orbit controller or animation loop.

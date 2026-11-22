@@ -100,7 +100,9 @@ test('Taiwan previews honor selected captions, the bridge label and the repair-p
   test.skip(!taiwan, 'No approved Taiwan trip.');
   const items = tripMedia(taiwan!);
   await page.goto('/travels/taiwan');
-  const first = page.locator(`.map-strip-card[data-media-id="${items[0].id}"]`);
+  const region = page.getByRole('region', { name: 'Taiwan travel map', exact: true });
+  await expect(region.locator('.map-strip-card')).toHaveCount(items.length);
+  const first = region.locator(`.map-strip-card[data-media-id="${items[0].id}"]`);
   await first.focus();
   await first.press('Enter');
   await first.press('Enter');
@@ -128,16 +130,63 @@ test('Taiwan previews honor selected captions, the bridge label and the repair-p
   }
 });
 
+test('published Bali keeps exact dates, reviewed framing and only the recorded temple pin', async ({ page }) => {
+  const bali = approvedTrips.find(trip => trip.id === 'bali');
+  test.skip(!bali, 'No approved Bali trip.');
+  const items = tripMedia(bali!);
+  const temple = items.find(item => item.id === 'bali-temple')!;
+  const mountain = items.find(item => item.id === 'bali-mountain')!;
+  expect(temple.date).toBe('2026-05-30');
+  expect(mountain.date).toBe('2026-05-27');
+  expect(temple.place).toBe('Pura Penataran Agung Lempuyang');
+  expect(temple.gps).toBeDefined();
+  expect(mountain.gps).toBeUndefined();
+
+  await page.goto('/travels/bali');
+  const region = page.getByRole('region', { name: 'Bali travel map', exact: true });
+  await expect(region).toHaveAttribute('data-renderer', 'maplibre', { timeout: 15_000 });
+  await expect(region.locator('.map-strip-card')).toHaveCount(2);
+  for (const item of items) {
+    const card = region.locator(`.map-strip-card[data-media-id="${item.id}"]`);
+    await expect(card.locator('time')).toHaveAttribute('datetime', item.date);
+    await expect(card.locator('time')).toHaveText(item.id === temple.id ? '30 May 2026' : '27 May 2026');
+  }
+
+  await expect(region.locator('.map-exact-pin')).toHaveCount(1);
+  const marker = region.locator(`.map-exact-pin[data-media-id="${temple.id}"]`);
+  expect([Number(await marker.getAttribute('data-longitude')), Number(await marker.getAttribute('data-latitude'))])
+    .toEqual(temple.gps);
+  await marker.click();
+  const popup = region.locator('.maplibregl-popup');
+  await expect(popup.locator('strong')).toHaveText(temple.place);
+  const location = popup.getByRole('link', { name: 'Open exact location', exact: true });
+  const url = new URL((await location.getAttribute('href'))!);
+  expect(url.origin).toBe('https://www.openstreetmap.org');
+  expect([Number(url.searchParams.get('mlon')), Number(url.searchParams.get('mlat'))]).toEqual(temple.gps);
+  await popup.getByRole('button', { name: 'Close popup', exact: true }).click();
+
+  const mountainCard = region.locator(`.map-strip-card[data-media-id="${mountain.id}"]`);
+  await mountainCard.focus();
+  if (await mountainCard.getAttribute('aria-pressed') !== 'true') await mountainCard.press('Enter');
+  await mountainCard.press('Enter');
+  const dialog = region.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('img')).toHaveAttribute('alt', /laptop screen.*coffee/i);
+});
+
 test('gallery maps align with the shared site column at every screen width', async ({ page }) => {
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['/travels', '/travels/taiwan']) {
       await page.goto(route);
       const header = (await page.locator('.site-header').boundingBox())!;
-      const map = (await page.locator('.trip-map').boundingBox())!;
-      expect(map.x).toBeCloseTo(header.x, 0);
-      expect(map.width).toBeCloseTo(header.width, 0);
-      expect(map.width).toBeLessThanOrEqual(640);
+      await expect(page.locator('.trip-map')).toHaveCount(route === '/travels' ? approvedTrips.length : 1);
+      for (const mapElement of await page.locator('.trip-map').all()) {
+        const map = (await mapElement.boundingBox())!;
+        expect(map.x).toBeCloseTo(header.x, 0);
+        expect(map.width).toBeCloseTo(header.width, 0);
+        expect(map.width).toBeLessThanOrEqual(640);
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     }
   }

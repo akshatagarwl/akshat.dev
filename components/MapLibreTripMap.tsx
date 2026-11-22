@@ -3,7 +3,7 @@
 import { Button } from '@ui-sdk/react/button';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Map, { Layer, Source, Marker, NavigationControl, ScaleControl, type MapRef } from 'react-map-gl/maplibre';
+import Map, { Layer, Source, Marker, Popup, NavigationControl, ScaleControl, type MapRef } from 'react-map-gl/maplibre';
 import * as maplibre from 'maplibre-gl';
 import { FileSource, PMTiles, Protocol } from 'pmtiles';
 import { Play } from 'lucide-react';
@@ -11,6 +11,7 @@ import { cubicBezier } from 'motion';
 import type { RecordedGps, Trip, TripMapItem, TripPhoto, TripVideo } from '@/lib/trips';
 import { tripDate, tripMedia, videoPosition } from '@/lib/trips';
 import style from '@/data/map-style.json';
+import { getMapRegion, type MapRegion, type MapRegionId } from '@/lib/map-regions';
 
 // Motion supplies the curve; MapLibre owns the camera and reduced-motion behavior.
 const cameraTransition = {
@@ -22,25 +23,33 @@ const protocol = new Protocol();
 maplibre.addProtocol('pmtiles', protocol.tile);
 maplibre.setWorkerUrl('/maps/maplibre-worker.mjs');
 maplibre.setWorkerCount(1);
-let archive: Promise<void> | undefined;
-function loadArchive() {
-  // Assets-only hosts need not implement Range requests. Reuse PMTiles' FileSource.
-  return archive ??= fetch('/maps/taiwan.pmtiles').then(async response => {
+const archives = new globalThis.Map<string, Promise<void>>();
+function loadArchive(region: MapRegion) {
+  const cached = archives.get(region.archive);
+  if (cached) return cached;
+  // Assets-only hosts need not implement Range requests. File names key PMTiles' cache.
+  const loading = fetch(region.archive).then(async response => {
     if (!response.ok) throw new Error('Local basemap unavailable.');
-    protocol.add(new PMTiles(new FileSource(new File([await response.arrayBuffer()], 'taiwan.pmtiles'))));
+    protocol.add(new PMTiles(new FileSource(new File([await response.arrayBuffer()], region.archiveKey))));
+  }).catch(error => {
+    archives.delete(region.archive);
+    throw error;
   });
+  archives.set(region.archive, loading);
+  return loading;
 }
 
 type Props = {
-  trip: Trip; activeVideo?: TripVideo; activeMediaId?: string; playbackTime: number;
+  trip: Trip; region?: MapRegionId; modalOpen?: boolean; activeVideo?: TripVideo; activeMediaId?: string; playbackTime: number;
   onPhoto: (photo: TripPhoto) => void; onVideo: (video: TripVideo) => void;
   onReady: () => void; onFailure: () => void;
 };
 type LocatedMedia = TripMapItem & { gps: RecordedGps };
 
 export default function MapLibreTripMap({
-  trip, activeVideo, activeMediaId, playbackTime, onPhoto, onVideo, onReady, onFailure,
+  trip, region: regionId, modalOpen = false, activeVideo, activeMediaId, playbackTime, onPhoto, onVideo, onReady, onFailure,
 }: Props) {
+  const region = getMapRegion(trip.id, regionId);
   const ref = useRef<MapRef>(null);
   const previousView = useRef<{
     center: [number, number]; zoom: number; bearing: number; pitch: number;
@@ -53,6 +62,8 @@ export default function MapLibreTripMap({
   const cards = useRef(new globalThis.Map<string, HTMLButtonElement>());
   const swiping = useRef(false);
   const [selected, setSelected] = useState<string>();
+  const detail = region.id === 'bali' && !modalOpen
+    ? located.find(item => item.id === selected) : undefined;
 
   const recordCamera = () => {
     const map = ref.current;
@@ -148,13 +159,13 @@ export default function MapLibreTripMap({
       },
     });
   };
-  const [archiveReady, setArchiveReady] = useState(false);
+  const [readyArchive, setReadyArchive] = useState<string>();
   useEffect(() => {
     let cancelled = false;
-    loadArchive().then(() => { if (!cancelled) setArchiveReady(true); })
+    loadArchive(region).then(() => { if (!cancelled) setReadyArchive(region.archive); })
       .catch(() => { if (!cancelled) onFailure(); });
     return () => { cancelled = true; };
-  }, [onFailure]);
+  }, [onFailure, region]);
   useEffect(() => {
     const map = ref.current;
     if (!map) return;
@@ -172,11 +183,15 @@ export default function MapLibreTripMap({
   }, [activeVideo]);
   const mapStyle = useMemo(() => ({
     ...style, glyphs: `${location.origin}${style.glyphs}`, sprite: `${location.origin}${style.sprite}`,
-    sources: { protomaps: { ...style.sources.protomaps, url: 'pmtiles://taiwan.pmtiles' } },
-  }) as maplibre.StyleSpecification, []);
+    sources: { protomaps: { ...style.sources.protomaps, url: `pmtiles://${region.archiveKey}` } },
+  }) as maplibre.StyleSpecification, [region]);
   const fit = (animate = false) => {
     const map = ref.current;
     if (!map || !located.length) return;
+    if (located.length === 1) {
+      map.fitBounds(region.bounds, { absolutePadding: true, padding: 36, ...(animate ? cameraTransition : { duration: 0 }) });
+      return;
+    }
     const bounds = new maplibre.LngLatBounds();
     for (const item of located) bounds.extend(item.gps);
     const narrow = map.getContainer().clientWidth < 600;
@@ -188,11 +203,11 @@ export default function MapLibreTripMap({
       },
     });
   };
-  if (!archiveReady) return null;
-  return <Map ref={ref} mapLib={maplibre} mapStyle={mapStyle}
+  if (readyArchive !== region.archive) return null;
+  return <Map key={region.id} ref={ref} mapLib={maplibre} mapStyle={mapStyle}
     transformRequest={url => ({ url: url.replaceAll('@', '%40') })}
-    initialViewState={{ bounds: [[119.5, 21.7], [122.3, 25.4]] }}
-    maxBounds={[117, 20, 125, 27]} minZoom={5.7} maxZoom={17}
+    initialViewState={{ bounds: region.bounds }}
+    maxBounds={region.maxBounds} minZoom={region.minZoom} maxZoom={17}
     scrollZoom={false} touchZoomRotate={false} dragRotate={false} doubleClickZoom={false}
     cooperativeGestures fadeDuration={0} renderWorldCopies={false}
     onResize={() => { if (activeVideo?.track) fitPlayback(); recordCamera(); }}
@@ -204,7 +219,7 @@ export default function MapLibreTripMap({
     onError={event => { console.warn('Local map unavailable:', event.error.message); onFailure(); }}>
     <NavigationControl position="top-right" showCompass={false} />
     <ScaleControl position="bottom-left" />
-    <Button className="map-fit" onClick={() => fit(true)}>Fit Taiwan</Button>
+    <Button className="map-fit" onClick={() => fit(true)}>Fit {region.label}</Button>
     {activeVideo?.track && <Source id="recorded-video-route" type="geojson" data={route}>
       <Layer id="recorded-video-route-line" type="line"
         paint={{ 'line-color': '#175e9b', 'line-width': 3, 'line-opacity': .75 }} />
@@ -218,8 +233,20 @@ export default function MapLibreTripMap({
       <Button className="map-exact-pin" data-media-id={item.id}
         data-longitude={item.gps[0]} data-latitude={item.gps[1]} data-kind={item.kind}
         aria-label={`${item.place}, ${tripDate(item.date)}: ${item.kind === 'photo' ? item.media.alt : item.media.title}`}
+        title={region.id === 'bali' ? `${item.place}, ${tripDate(item.date)}` : undefined}
         aria-pressed={selected === item.id} onClick={() => select(item, true)} />
     </Marker>)}
+    {detail && <Popup longitude={detail.gps[0]} latitude={detail.gps[1]}
+      closeOnClick={false} focusAfterOpen={false} maxWidth="280px" offset={14}
+      onClose={() => setSelected(undefined)}>
+      <div className="map-location-details">
+        <strong>{detail.place}</strong>
+        <time dateTime={detail.date}>{tripDate(detail.date)}</time>
+        <p>Recorded {detail.kind === 'photo' ? 'photo' : 'video'} GPS</p>
+        <a href={`https://www.openstreetmap.org/?mlat=${detail.gps[1]}&mlon=${detail.gps[0]}#map=17/${detail.gps[1]}/${detail.gps[0]}`}
+          target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Open exact location</a>
+      </div>
+    </Popup>}
     <div className="map-media-strip" ref={strip} hidden={!!activeVideo}
       role="group" aria-label="Photos and videos, chronological order"
       onTouchStart={() => { swiping.current = true; }} onScrollEnd={selectScrolledCard}>
@@ -233,7 +260,7 @@ export default function MapLibreTripMap({
             else cards.current.delete(item.id);
           }}
           data-media-id={item.id} data-stop-id={item.stopId} data-kind={item.kind}
-          aria-label={`${description}, ${tripDate(item.date)}. ${selected === item.id ? 'Open' : 'Show on map'}`}
+          aria-label={`${description}, ${tripDate(item.date)}. ${selected === item.id ? 'Open' : item.gps ? 'Show on map' : 'Select (no recorded GPS)'}`}
           aria-keyshortcuts="ArrowLeft ArrowRight"
           aria-pressed={selected === item.id} title={item.place}
           onPointerEnter={event => { if (event.pointerType === 'mouse') select(item); }}

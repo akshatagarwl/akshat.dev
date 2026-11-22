@@ -6,7 +6,9 @@ import { parseTrips, tripMedia, videoPosition } from '../lib/trips';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const trip = '/travels/taiwan';
-const draft = JSON.parse(readFileSync('.generated/travel-draft/trips.json', 'utf8'))[0];
+const drafts = JSON.parse(readFileSync('.generated/travel-draft/trips.json', 'utf8'));
+const draft = drafts[0];
+const bali = parseTrips(drafts).find(item => item.id === 'bali');
 const mediaCount = draft.stops.reduce((count: number, stop: { photos: unknown[]; videos?: unknown[] }) => count + stop.photos.length + (stop.videos?.length ?? 0), 0);
 const card = (page: import('@playwright/test').Page, id: string) =>
   page.locator(`.map-strip-card[data-media-id="${id}"]`);
@@ -33,7 +35,7 @@ test('maintained MapLibre component is the only travel surface and dates are vis
   await expect(page.locator('.trip-map, #travels')).toHaveCount(0);
   await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' }).click();
   await expect(page.getByRole('heading', { name: 'gallery', exact: true })).toBeVisible();
-  await page.locator('#travels .trip-cover').click();
+  await page.locator('#travels .trip-cover[href="/travels/taiwan"]').click();
   await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
   await expect(page.locator('.maplibregl-canvas')).toBeVisible();
   await expect(page.locator('.trip-pages, .trip-stop, .trip-masthead, .map-geography')).toHaveCount(0);
@@ -537,16 +539,17 @@ test('map and individual media UI remain accessible and fit narrow screens', asy
   test.setTimeout(90000);
   for (const path of ['/travels', trip]) {
     await page.goto(path);
-    await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
+    const taiwan = page.getByRole('region', { name: 'Taiwan travel map', exact: true });
+    await expect(taiwan).toHaveAttribute('data-renderer', 'maplibre');
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(path);
-      await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
+      await expect(taiwan).toHaveAttribute('data-renderer', 'maplibre');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await expect(page.locator('.map-strip-card')).toHaveCount(mediaCount);
-      await expect(page.locator('[data-overlapping="true"]')).toHaveCount(0);
-      const stage = (await page.locator('.trip-map-stage').boundingBox())!;
-      for (const item of await page.locator('.map-polaroid').all()) {
+      await expect(taiwan.locator('.map-strip-card')).toHaveCount(mediaCount);
+      await expect(taiwan.locator('[data-overlapping="true"]')).toHaveCount(0);
+      const stage = (await taiwan.locator('.trip-map-stage').boundingBox())!;
+      for (const item of await taiwan.locator('.map-polaroid').all()) {
         const rectangle = (await item.boundingBox())!;
         if (stage.width >= 1050) {
           expect(rectangle.x).toBeGreaterThanOrEqual(stage.x);
@@ -558,8 +561,183 @@ test('map and individual media UI remain accessible and fit narrow screens', asy
     }
     await page.setViewportSize(info.project.name === 'mobile' ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
     await openMedia(page, 'jiufen');
-    const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+    const audit = await new AxeBuilder({ page }).include('.trip-map[aria-label="Taiwan travel map"]')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
     expect(audit.violations, JSON.stringify(audit.violations, null, 2)).toEqual([]);
     if (path === trip) await page.screenshot({ path: `.generated/travel-draft/verify/map-only-${info.project.name}.jpg`, fullPage: true });
   }
+});
+
+test.describe('private Bali gallery', () => {
+  test.skip(!bali, 'No local Bali draft is staged.');
+
+  test('Bali uses its regional library basemap and only the approved recorded pin', async ({ page }) => {
+    await page.goto('/travels/bali');
+    const region = page.getByRole('region', { name: 'Bali travel map', exact: true });
+    await expect(region).toHaveAttribute('data-renderer', 'maplibre');
+    await expect(region.locator('.maplibregl-canvas')).toBeVisible();
+    await expect(region.getByRole('button', { name: 'Fit Bali', exact: true })).toBeVisible();
+    await expect(region.getByRole('button', { name: 'Fit Taiwan', exact: true })).toHaveCount(0);
+    await expect(region.locator('.map-strip-card')).toHaveCount(2);
+    expect(await region.locator('.map-strip-card').evaluateAll(elements => elements.map(item => item.getAttribute('data-media-id'))))
+      .toEqual(['bali-mountain', 'bali-temple']);
+    await expect(card(page, 'bali-mountain').locator('time')).toHaveAttribute('datetime', '2026-05-27');
+    await expect(card(page, 'bali-mountain').locator('time')).toHaveText('27 May 2026');
+    await expect(card(page, 'bali-temple').locator('time')).toHaveAttribute('datetime', '2026-05-30');
+    await expect(card(page, 'bali-temple').locator('time')).toHaveText('30 May 2026');
+    await expect(region.locator('.map-exact-pin')).toHaveCount(1);
+    const temple = tripMedia(bali!).find(item => item.id === 'bali-temple')!;
+    expect(temple.gps).toBeDefined();
+    const marker = pin(page, 'bali-temple');
+    expect([Number(await marker.getAttribute('data-longitude')), Number(await marker.getAttribute('data-latitude'))])
+      .toEqual(temple.gps);
+    expect(tripMedia(bali!).find(item => item.id === 'bali-mountain')!.gps).toBeUndefined();
+    await expect(pin(page, 'bali-mountain')).toHaveCount(0);
+    await expect(card(page, 'bali-mountain')).toBeVisible();
+    await expect(card(page, 'bali-mountain')).toHaveAttribute('aria-pressed', 'false');
+    await expect(card(page, 'bali-mountain')).toHaveAttribute('aria-label', /Select \(no recorded GPS\)/);
+    await expect(region.locator('.map-poster')).toHaveAttribute('src', '/maps/bali-overview.webp');
+    await expect(region.locator('.map-poster')).toHaveAttribute('alt', /Bali/);
+  });
+
+  test('Bali native popup shows verified place, date and the exact recorded location without camera drift', async ({ page }) => {
+    await page.goto('/travels/bali');
+    const region = page.getByRole('region', { name: 'Bali travel map', exact: true });
+    await expect(region).toHaveAttribute('data-renderer', 'maplibre');
+    await pin(page, 'bali-temple').click();
+    const popup = region.locator('.maplibregl-popup');
+    await expect(popup).toBeVisible();
+    await expect(popup.locator('strong')).toHaveText('Pura Penataran Agung Lempuyang');
+    await expect(popup.locator('time')).toHaveAttribute('datetime', '2026-05-30');
+    await expect(popup.locator('time')).toHaveText('30 May 2026');
+    await expect(popup).toContainText('Recorded photo GPS');
+    const link = popup.getByRole('link', { name: 'Open exact location', exact: true });
+    const gps = tripMedia(bali!).find(item => item.id === 'bali-temple')!.gps!;
+    const url = new URL((await link.getAttribute('href'))!);
+    expect(url.origin).toBe('https://www.openstreetmap.org');
+    expect(Number(url.searchParams.get('mlat'))).toBe(gps[1]);
+    expect(Number(url.searchParams.get('mlon'))).toBe(gps[0]);
+    expect(url.hash).toBe(`#map=17/${gps[1]}/${gps[0]}`);
+    await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    const camera = region.locator('.maplibregl-canvas');
+    await expect(camera).toHaveAttribute('data-camera-moving', 'false');
+    const before = await camera.getAttribute('data-camera');
+    await card(page, 'bali-temple').focus();
+    await expect(card(page, 'bali-temple')).toBeFocused();
+    await popup.getByRole('button', { name: 'Close popup', exact: true }).click();
+    await expect(popup).toHaveCount(0);
+    await expect(pin(page, 'bali-temple')).toHaveAttribute('aria-pressed', 'false');
+    await expect(camera).toHaveAttribute('data-camera', before!);
+    await pin(page, 'bali-temple').click();
+    await expect(popup).toBeVisible();
+    await expect(camera).toHaveAttribute('data-camera', before!);
+  });
+
+  test('Bali full-resolution crops and every preview are sanitized without upscaling', async ({ request }) => {
+    for (const [id, width, height] of [
+      ['bali-temple', 3024, 3650], ['bali-mountain', 1080, 1700],
+    ] as const) {
+      for (const size of ['640', '1280', '1800', 'original']) {
+        const response = await request.get(`/travels/preview/bali/${id}-${size}.webp`);
+        expect(response.ok()).toBe(true);
+        const metadata = await sharp(await response.body()).metadata();
+        expect(metadata.width).toBe(size === 'original' ? width : Math.min(Number(size), width));
+        if (size === 'original') expect(metadata.height).toBe(height);
+        expect(metadata.exif).toBeUndefined();
+        expect(metadata.iptc).toBeUndefined();
+        expect(metadata.xmp).toBeUndefined();
+      }
+    }
+  });
+
+  test('Bali photo navigation stays in the same modal without moving the underlying camera', async ({ page }) => {
+    await page.goto('/travels/bali');
+    const region = page.getByRole('region', { name: 'Bali travel map', exact: true });
+    await expect(region).toHaveAttribute('data-renderer', 'maplibre');
+    await card(page, 'bali-mountain').focus();
+    await card(page, 'bali-mountain').press('Enter');
+    const camera = region.locator('.maplibregl-canvas');
+    await expect(camera).toHaveAttribute('data-camera-moving', 'false');
+    await expect(camera).toHaveAttribute('data-camera', /^\[/);
+    const initialCamera = await camera.getAttribute('data-camera');
+    await openMedia(page, 'bali-mountain');
+    const dialog = region.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await dialog.evaluate((element: HTMLDialogElement) => {
+      element.dataset.closeCount = '0';
+      element.addEventListener('close', () => {
+        element.dataset.closeCount = String(Number(element.dataset.closeCount) + 1);
+      });
+    });
+    await expect(dialog.locator('figure img')).toHaveAttribute('src', /bali-mountain-original.webp$/);
+    await expect(dialog.locator('header time')).toHaveText('27 May 2026');
+    await page.keyboard.press('ArrowRight');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('figure img')).toHaveAttribute('src', /bali-temple-original.webp$/);
+    await expect(dialog.locator('header time')).toHaveText('30 May 2026');
+    await expect(region.locator('.maplibregl-popup')).toHaveCount(0);
+    await expect(dialog.locator('nav span')).toHaveText('2 / 2');
+    await page.keyboard.press('ArrowLeft');
+    await expect(dialog.locator('figure img')).toHaveAttribute('src', /bali-mountain-original.webp$/);
+    await expect(dialog).toHaveAttribute('data-close-count', '0');
+    await expect(camera).toHaveAttribute('data-camera', initialCamera!);
+    await expect(region.locator('.video-viewer')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(card(page, 'bali-mountain')).toBeFocused();
+    await expect(camera).toHaveAttribute('data-camera', initialCamera!);
+  });
+
+  test('Taiwan and Bali coexist on the index with separate archive fetches and cache keys', async ({ page }) => {
+    const archives: string[] = [];
+    const errors: string[] = [];
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (path.endsWith('.pmtiles')) archives.push(path);
+    });
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto('/travels');
+    const taiwan = page.getByRole('region', { name: 'Taiwan travel map', exact: true });
+    const region = page.getByRole('region', { name: 'Bali travel map', exact: true });
+    await expect(page.locator('#travels .trip-cover[href="/travels/taiwan"]')).toBeVisible();
+    await taiwan.scrollIntoViewIfNeeded();
+    await expect(taiwan).toHaveAttribute('data-renderer', 'maplibre');
+    await region.scrollIntoViewIfNeeded();
+    await expect(region).toHaveAttribute('data-renderer', 'maplibre');
+    await expect(page.locator('#travels .trip-cover[href="/travels/bali"]')).toBeVisible();
+    await expect(region.getByRole('button', { name: 'Fit Bali', exact: true })).toBeVisible();
+    await expect(region.locator('.map-strip-card')).toHaveCount(2);
+    await expect(region.locator('.map-exact-pin')).toHaveCount(1);
+    await expect(taiwan.locator('.map-strip-card')).toHaveCount(mediaCount);
+    await expect(taiwan.getByRole('button', { name: 'Fit Taiwan', exact: true })).toBeAttached();
+    expect(archives).toContain('/maps/taiwan.pmtiles');
+    expect(archives).toContain('/maps/bali.pmtiles');
+    await region.getByRole('button', { name: 'Fit Bali', exact: true }).click();
+    await taiwan.scrollIntoViewIfNeeded();
+    await taiwan.getByRole('button', { name: 'Fit Taiwan', exact: true }).click();
+    await expect(taiwan).toHaveAttribute('data-renderer', 'maplibre');
+    await expect(region).toHaveAttribute('data-renderer', 'maplibre');
+    expect(errors).toEqual([]);
+  });
+
+  test('Bali fits narrow and desktop screens with accessible photo navigation', async ({ page }, info) => {
+    for (const width of [320, 390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/travels/bali');
+      const region = page.getByRole('region', { name: 'Bali travel map', exact: true });
+      await expect(region).toHaveAttribute('data-renderer', 'maplibre');
+      await expect(region.locator('.map-strip-card')).toHaveCount(2);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await openMedia(page, 'bali-temple');
+      await expect(region.getByRole('dialog')).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expect(region.getByRole('dialog').getByRole('navigation', { name: 'Media navigation' }))
+        .toBeInViewport({ ratio: 1 });
+      await page.keyboard.press('Escape');
+    }
+    const audit = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+    expect(audit.violations, JSON.stringify(audit.violations, null, 2)).toEqual([]);
+    await page.screenshot({ path: `.generated/travel-draft/verify/bali-${info.project.name}.jpg`, fullPage: true });
+  });
 });

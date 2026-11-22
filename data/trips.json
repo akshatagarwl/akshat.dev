@@ -1138,5 +1138,52 @@
         ]
       }
     ]
+  },
+  {
+    "id": "bali",
+    "title": "Bali",
+    "month": "2026-05",
+    "cover": {
+      "id": "bali-temple",
+      "src": "/travels/bali/bali-temple-1800.webp",
+      "alt": "Standing beside carved stone dragon sculptures at Pura Penataran Agung Lempuyang, Bali.",
+      "caption": null,
+      "width": 1800,
+      "height": 2173,
+      "original": { "src": "/travels/bali/bali-temple-original.webp", "width": 3024, "height": 3650 },
+      "gps": [115.631011111111, -8.39145]
+    },
+    "stops": [
+      {
+        "id": "bali-mountain",
+        "place": "Bali",
+        "date": "2026-05-27",
+        "locationNote": "No recorded location is available for this photo; no map pin is inferred.",
+        "photos": [{
+          "id": "bali-mountain",
+          "src": "/travels/bali/bali-mountain-1800.webp",
+          "alt": "A mountain and green landscape beyond a laptop screen and a cup of coffee in Bali.",
+          "caption": null,
+          "width": 1080,
+          "height": 1700,
+          "original": { "src": "/travels/bali/bali-mountain-original.webp", "width": 1080, "height": 1700 }
+        }]
+      },
+      {
+        "id": "bali-temple",
+        "place": "Pura Penataran Agung Lempuyang",
+        "date": "2026-05-30",
+        "photos": [{
+          "id": "bali-temple",
+          "src": "/travels/bali/bali-temple-1800.webp",
+          "alt": "Standing beside carved stone dragon sculptures at Pura Penataran Agung Lempuyang, Bali.",
+          "caption": null,
+          "width": 1800,
+          "height": 2173,
+          "original": { "src": "/travels/bali/bali-temple-original.webp", "width": 3024, "height": 3650 },
+          "gps": [115.631011111111, -8.39145]
+        }]
+      }
+    ]
   }
 ]

@@ -27,6 +27,19 @@ Archive: 3,936,946 bytes; SHA-256 `35f617a44ae3d34246b00d7f7bb10a631de78cce4493c
 
 The installed CLI reports `pmtiles dev, commit none, built at unknown`; the checked-in archive/hash, source date and extraction parameters identify the actual artifact rather than claiming a versioned CLI build.
 
+## Bali regional archive
+
+Source: https://build.protomaps.com/20261116.pmtiles (listed at https://maps.protomaps.com/builds/). An unmodified rectangular subset of Bali and surrounding water, zooms 0–9, under the same data licenses and attribution above. Download: `/maps/bali.pmtiles`.
+
+```sh
+pmtiles extract https://build.protomaps.com/20261116.pmtiles public/maps/bali.pmtiles --bbox=114.4,-8.95,115.75,-8.05 --maxzoom=9
+pmtiles verify public/maps/bali.pmtiles
+```
+
+Archive: 658,133 bytes; SHA-256 `7e0f82320e3e4af5349c14aed23a494d59a0af32bdf7b6cf89729d31998be5db`.
+
+Regional configuration is in `lib/map-regions.ts`. Taiwan and Bali use separate archive/cache keys; no personal coordinates or photographs belong in these public basemap assets. Each region loads its archive only when its map becomes visible. With just one recorded photo pin, fitting retains the island overview rather than zooming into a single point.
+
 ## Styles, glyphs, sprites and worker
 
 Protomaps assets source revision: **`028c18f713baecad011301ff7a69acc39bcc2ae7`**, https://github.com/protomaps/basemaps-assets . Only the first four Latin glyph ranges for the three named fonts and existing v4 light sprite assets are copied. Non-English names without English/Latin alternatives are omitted, not invented or fetched remotely.
@@ -47,4 +60,4 @@ Ordinary builds require no map-vendor requests. Browsers fetch only same-origin 
 PLAYWRIGHT_CHROME_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' node scripts/render-map-poster.mjs
 ```
 
-The script hides all caption/marker/popup content before capturing only the map stage and strips metadata via Sharp. Visually review the resulting poster before committing it. Personal travel photographs are never covered by these map or code licenses.
+The script creates a separate native MapLibre map using only the configured region bounds and basemap assets. It never loads personal trip records, pins, dates, photographs or camera positions, and strips metadata via Sharp. To render Bali instead, set `MAP_REGION=bali`; `MAP_PREVIEW_URL` may point at any loopback-only local asset server. Visually review the resulting poster before committing it. Personal travel photographs are never covered by these map or code licenses.

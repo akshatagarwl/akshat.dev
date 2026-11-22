@@ -13,7 +13,7 @@
     "check": "bun run prepare-content && NEXT_TELEMETRY_DISABLED=1 next typegen && tsc --noEmit",
     "test": "playwright test",
     "test:travel-preview": "playwright test --config playwright.travel.config.ts",
-    "test:engine": "node scripts/test-seedbed.mjs && bun scripts/test-travels.tsx && bun scripts/test-trips.tsx && bun test ./scripts/test-prepare-trips.ts",
+    "test:engine": "node scripts/test-seedbed.mjs && bun scripts/test-travels.tsx && bun scripts/test-trips.tsx && bun test ./scripts/test-prepare-trips.ts ./scripts/test-map-regions.ts",
     "render:garden": "node scripts/render-garden.mjs",
     "deploy": "bun run build && bun scripts/assert-publishable.ts && WRANGLER_SEND_METRICS=false node node_modules/wrangler/bin/wrangler.js deploy"
   },

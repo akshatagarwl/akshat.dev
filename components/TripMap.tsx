@@ -5,6 +5,7 @@ import ReactPlayer from 'react-player';
 import { Button } from '@ui-sdk/react/button';
 import { Component, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { Trip } from '@/lib/trips';
+import { getMapRegion, type MapRegionId } from '@/lib/map-regions';
 import { tripDate, tripMedia, videoPosition } from '@/lib/trips';
 
 const MapLibreTripMap = dynamic(() => import('./MapLibreTripMap'), { ssr: false });
@@ -15,7 +16,8 @@ class MapBoundary extends Component<{ children: ReactNode; onFailure: () => void
   render() { return this.state.failed ? null : this.props.children; }
 }
 
-export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
+export function TripMap({ trip, href, region: regionId }: { trip: Trip; href?: string; region?: MapRegionId }) {
+  const region = getMapRegion(trip.id, regionId);
   const root = useRef<HTMLElement>(null), viewer = useRef<HTMLDialogElement>(null), player = useRef<HTMLVideoElement>(null), videoClose = useRef<HTMLButtonElement>(null), videoOpener = useRef<HTMLElement | null>(null), returnStop = useRef<string | null>(null);
   const [modal, setModal] = useState(false);
   const videoPanel = useRef<HTMLElement>(null);
@@ -115,11 +117,11 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
   return <section ref={root} className="trip-map" aria-label={`${trip.title} travel map`} data-renderer={failed ? 'fallback' : ready ? 'maplibre' : 'loading'}>
     <div className="trip-map-stage">
       <div className="map-static" hidden={ready && !failed}>
-        <img className="map-poster" src="/maps/taiwan-overview.webp" alt="OpenStreetMap basemap of Taiwan and its surrounding coast." width="1200" height="800" />
+        <img className="map-poster" src={region.poster} alt={region.posterAlt} width="1200" height="800" />
         <details className="map-static-photos"><summary>Media and dates</summary>{media.map(item => <a key={item.id} href={item.media.original?.src ?? item.media.src}>{item.place} · <time dateTime={item.date}>{tripDate(item.date)}</time>{item.kind === 'video' && ' · video'}</a>)}</details>
         <small className="map-static-credit"><a href="https://protomaps.com">Protomaps</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://esa-worldcover.org/en/data-access">ESA WorldCover</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)</small>
       </div>
-      {visible && !failed && <MapBoundary onFailure={onMapFailure}><MapLibreTripMap trip={trip} activeVideo={modal ? undefined : clip?.video} activeMediaId={modal ? undefined : active?.id} playbackTime={playbackTime} onReady={onMapReady} onFailure={onMapFailure} onPhoto={photo => {
+      {visible && !failed && <MapBoundary onFailure={onMapFailure}><MapLibreTripMap key={region.id} trip={trip} region={region.id} modalOpen={modal} activeVideo={modal ? undefined : clip?.video} activeMediaId={modal ? undefined : active?.id} playbackTime={playbackTime} onReady={onMapReady} onFailure={onMapFailure} onPhoto={photo => {
         activate(media.findIndex(item => item.id === photo.id));
       }} onVideo={video => {
         activate(media.findIndex(item => item.id === video.id));
