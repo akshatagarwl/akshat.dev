@@ -34,7 +34,7 @@ try {
       interactive: false, renderWorldCopies: false,
       style: {
         ...style, glyphs: `${origin}${style.glyphs}`, sprite: `${origin}${style.sprite}`,
-        sources: { protomaps: { ...style.sources.protomaps, url: `pmtiles://${region.archiveKey}` } },
+        sources: { protomaps: { ...style.sources.protomaps, url: `pmtiles://${region.archiveKey}`, maxzoom: region.archiveMaxZoom } },
       },
       transformRequest: resource => ({ url: resource.replaceAll('@', '%40') }),
     });

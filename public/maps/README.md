@@ -38,7 +38,18 @@ pmtiles verify public/maps/bali.pmtiles
 
 Archive: 658,133 bytes; SHA-256 `7e0f82320e3e4af5349c14aed23a494d59a0af32bdf7b6cf89729d31998be5db`.
 
-Regional configuration is in `lib/map-regions.ts`. Taiwan and Bali use separate archive/cache keys; no personal coordinates or photographs belong in these public basemap assets. Each region loads its archive only when its map becomes visible. With just one recorded photo pin, fitting retains the island overview rather than zooming into a single point.
+Regional configuration is in `lib/map-regions.ts`. Each region uses separate archive/cache keys; no personal coordinates or photographs belong in these public basemap assets. Each region loads its archive only when its map becomes visible. With just one recorded photo pin, fitting retains the island overview rather than zooming into a single point.
+
+## Siquijor regional archive
+
+Source: https://build.protomaps.com/20261116.pmtiles . An unmodified regional subset of Siquijor and surrounding water through zoom 12, under the same data licenses and attribution above. Download: `/maps/siquijor.pmtiles`.
+
+```sh
+pmtiles extract https://build.protomaps.com/20261116.pmtiles public/maps/siquijor.pmtiles --bbox=123.35,8.95,123.85,9.4 --maxzoom=12
+pmtiles verify public/maps/siquijor.pmtiles
+```
+
+Archive: 824,113 bytes; SHA-256 `f1ef0d903def24ded58d779acc964b2d606eb5b0f773a35aedabd4ff8ee2d049`. `MAP_REGION=siquijor` renders its generic fallback poster without personal records. The region's source maximum zoom is configured explicitly; higher display zooms overzoom the available vectors.
 
 ## Styles, glyphs, sprites and worker
 

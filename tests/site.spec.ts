@@ -159,10 +159,8 @@ test('published Bali keeps exact dates, reviewed framing and only the recorded t
   await marker.click();
   const popup = region.locator('.maplibregl-popup');
   await expect(popup.locator('strong')).toHaveText(temple.place);
-  const location = popup.getByRole('link', { name: 'Open exact location', exact: true });
-  const url = new URL((await location.getAttribute('href'))!);
-  expect(url.origin).toBe('https://www.openstreetmap.org');
-  expect([Number(url.searchParams.get('mlon')), Number(url.searchParams.get('mlat'))]).toEqual(temple.gps);
+  await expect(popup).not.toContainText('Recorded photo GPS');
+  await expect(popup.getByRole('link')).toHaveCount(0);
   await popup.getByRole('button', { name: 'Close popup', exact: true }).click();
 
   const mountainCard = region.locator(`.map-strip-card[data-media-id="${mountain.id}"]`);
@@ -172,6 +170,24 @@ test('published Bali keeps exact dates, reviewed framing and only the recorded t
   const dialog = region.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('img')).toHaveAttribute('alt', /laptop screen.*coffee/i);
+});
+
+test('published regional photo popups contain only the place and date', async ({ page }) => {
+  test.setTimeout(60_000);
+  for (const id of ['bali', 'siquijor']) {
+    const trip = approvedTrips.find(item => item.id === id)!;
+    const item = tripMedia(trip).find(media => media.gps)!;
+    await page.goto(`/travels/${id}`);
+    const region = page.getByRole('region', { name: `${trip.title} travel map`, exact: true });
+    await expect(region).toHaveAttribute('data-renderer', 'maplibre', { timeout: 15_000 });
+    await region.locator(`.map-exact-pin[data-media-id="${item.id}"]`).click();
+    const details = region.locator('.map-location-details');
+    await expect(details.locator(':scope > *')).toHaveCount(2);
+    await expect(details.locator('strong')).toHaveText(item.place);
+    await expect(details.locator('time')).toHaveAttribute('datetime', item.date);
+    await expect(details.getByRole('link')).toHaveCount(0);
+    await expect(details).not.toContainText('Recorded photo GPS');
+  }
 });
 
 test('gallery maps align with the shared site column at every screen width', async ({ page }) => {

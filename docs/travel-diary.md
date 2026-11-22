@@ -6,10 +6,18 @@ Current owner direction: **add dates, keep only the map, reuse existing map comp
 
 The owner approved publication of Bali's two reviewed photographs, exact photo dates and temple GPS pin. Approved records are in `data/trips.json`; sanitized responsive and full-resolution cropped copies are in `public/travels/bali/`. The gallery is `/travels/bali`. Ordinary builds include only approved records; ignored source exports, recovery copies and private drafts remain local.
 
-- The temple portrait, dated 30 May 2026 in Photos, is cropped to remove the shoes; the Photos original and exported source copies remain untouched. Its recorded GPS is used with the owner's explicit permission. Reverse-geocoded OpenStreetMap data places it at the Gates of Heaven; Indonesia's official tourism site confirms Pura Penataran Agung Lempuyang in Tri Buana, Abang, Karangasem. The standard library popup shows only the temple name (Pura Penataran Agung Lempuyang), exact date and a link to the recorded point on OpenStreetMap; the full locality is not displayed.
+- The temple portrait, dated 30 May 2026 in Photos, is cropped to remove the shoes; the Photos original and exported source copies remain untouched. Its recorded GPS is used with the owner's explicit permission. Reverse-geocoded OpenStreetMap data places it at the Gates of Heaven; Indonesia's official tourism site confirms Pura Penataran Agung Lempuyang in Tri Buana, Abang, Karangasem. The standard library popup shows only the temple name (Pura Penataran Agung Lempuyang) and exact date. The full locality, GPS explanatory text and external location link are not displayed.
 - The mountain photograph, dated 27 May 2026 in Photos, is cropped from 1080×1920 to 1080×1700: a little excess sky is removed while the full original width, laptop screen and coffee foreground are retained. No rotation, perspective skew, mirroring, invented content or upscaling was needed. Neither its file nor Photos has a recorded location, so it has no inferred pin. Both photos retain factual alt text but no visible captions.
 - Both use sanitized responsive WebPs and a sanitized original-resolution WebP in the existing native photo dialog. Source exports and private provenance remain ignored local assets; only the owner-approved sanitized photographs and recorded temple GPS are published. No photographs or captured GPS are stored in the public regional-map configuration.
 - Bali and Taiwan use distinct self-hosted Protomaps archives and cache keys, with region-specific fit controls and generic fallback posters. Public basemap provenance is in `public/maps/README.md`.
+
+## Siquijor gallery
+
+The owner approved publication of `/travels/siquijor` with the reviewed palm-and-boat photograph. Photos records 29 December 2025; recorded GPS reverse-geocodes to San Juan, Siquijor, Philippines, not Bali. The pin is the captured point, not a nearby business or inferred beach landmark. No journey, route or additional photographs are inferred.
+
+The image is leveled by one degree and minimally trimmed to remove rotated borders, keeping the palm, boat and beach. Responsive copies and the full-resolution 4183×5578 WebP have no EXIF/XMP/IPTC; the source export remains untouched and ignored. There is no visible caption. The native map popup shows only San Juan and the exact date, without GPS explanatory text or an external location link.
+
+Reviewed records are in `data/trips.json`; the sanitized responsive images and full-resolution cropped copy are in `public/travels/siquijor/`. Ordinary builds publish the approved Taiwan, Bali and Siquijor records. Original exports and provenance remain ignored and untouched. The Siquijor basemap is a generic, self-hosted Protomaps subset through zoom 12, not a custom map or a source of personal coordinates.
 
 ## Existing components, not a custom map
 

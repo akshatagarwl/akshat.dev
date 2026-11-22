@@ -1185,5 +1185,35 @@
         }]
       }
     ]
+  },
+  {
+    "id": "siquijor",
+    "title": "Siquijor",
+    "month": "2025-12",
+    "cover": {
+      "id": "siquijor-palm",
+      "src": "/travels/siquijor/siquijor-palm-1800.webp",
+      "alt": "An arched coconut palm above a small boat on the shore in San Juan, Siquijor.",
+      "caption": null,
+      "width": 1800,
+      "height": 2400,
+      "original": { "src": "/travels/siquijor/siquijor-palm-original.webp", "width": 4183, "height": 5578 },
+      "gps": [123.495016666667, 9.156]
+    },
+    "stops": [{
+      "id": "san-juan",
+      "place": "San Juan",
+      "date": "2025-12-29",
+      "photos": [{
+        "id": "siquijor-palm",
+        "src": "/travels/siquijor/siquijor-palm-1800.webp",
+        "alt": "An arched coconut palm above a small boat on the shore in San Juan, Siquijor.",
+        "caption": null,
+        "width": 1800,
+        "height": 2400,
+        "original": { "src": "/travels/siquijor/siquijor-palm-original.webp", "width": 4183, "height": 5578 },
+        "gps": [123.495016666667, 9.156]
+      }]
+    }]
   }
 ]

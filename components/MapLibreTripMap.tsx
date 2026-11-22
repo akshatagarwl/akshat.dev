@@ -62,7 +62,7 @@ export default function MapLibreTripMap({
   const cards = useRef(new globalThis.Map<string, HTMLButtonElement>());
   const swiping = useRef(false);
   const [selected, setSelected] = useState<string>();
-  const detail = region.id === 'bali' && !modalOpen
+  const detail = region.id !== 'taiwan' && !modalOpen
     ? located.find(item => item.id === selected) : undefined;
 
   const recordCamera = () => {
@@ -183,7 +183,9 @@ export default function MapLibreTripMap({
   }, [activeVideo]);
   const mapStyle = useMemo(() => ({
     ...style, glyphs: `${location.origin}${style.glyphs}`, sprite: `${location.origin}${style.sprite}`,
-    sources: { protomaps: { ...style.sources.protomaps, url: `pmtiles://${region.archiveKey}` } },
+    sources: { protomaps: {
+      ...style.sources.protomaps, url: `pmtiles://${region.archiveKey}`, maxzoom: region.archiveMaxZoom,
+    } },
   }) as maplibre.StyleSpecification, [region]);
   const fit = (animate = false) => {
     const map = ref.current;
@@ -233,7 +235,7 @@ export default function MapLibreTripMap({
       <Button className="map-exact-pin" data-media-id={item.id}
         data-longitude={item.gps[0]} data-latitude={item.gps[1]} data-kind={item.kind}
         aria-label={`${item.place}, ${tripDate(item.date)}: ${item.kind === 'photo' ? item.media.alt : item.media.title}`}
-        title={region.id === 'bali' ? `${item.place}, ${tripDate(item.date)}` : undefined}
+        title={region.id !== 'taiwan' ? `${item.place}, ${tripDate(item.date)}` : undefined}
         aria-pressed={selected === item.id} onClick={() => select(item, true)} />
     </Marker>)}
     {detail && <Popup longitude={detail.gps[0]} latitude={detail.gps[1]}
@@ -242,9 +244,6 @@ export default function MapLibreTripMap({
       <div className="map-location-details">
         <strong>{detail.place}</strong>
         <time dateTime={detail.date}>{tripDate(detail.date)}</time>
-        <p>Recorded {detail.kind === 'photo' ? 'photo' : 'video'} GPS</p>
-        <a href={`https://www.openstreetmap.org/?mlat=${detail.gps[1]}&mlon=${detail.gps[0]}#map=17/${detail.gps[1]}/${detail.gps[0]}`}
-          target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Open exact location</a>
       </div>
     </Popup>}
     <div className="map-media-strip" ref={strip} hidden={!!activeVideo}

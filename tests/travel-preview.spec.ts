@@ -610,16 +610,8 @@ test.describe('private Bali gallery', () => {
     await expect(popup.locator('strong')).toHaveText('Pura Penataran Agung Lempuyang');
     await expect(popup.locator('time')).toHaveAttribute('datetime', '2026-05-30');
     await expect(popup.locator('time')).toHaveText('30 May 2026');
-    await expect(popup).toContainText('Recorded photo GPS');
-    const link = popup.getByRole('link', { name: 'Open exact location', exact: true });
-    const gps = tripMedia(bali!).find(item => item.id === 'bali-temple')!.gps!;
-    const url = new URL((await link.getAttribute('href'))!);
-    expect(url.origin).toBe('https://www.openstreetmap.org');
-    expect(Number(url.searchParams.get('mlat'))).toBe(gps[1]);
-    expect(Number(url.searchParams.get('mlon'))).toBe(gps[0]);
-    expect(url.hash).toBe(`#map=17/${gps[1]}/${gps[0]}`);
-    await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
-    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(popup).not.toContainText('Recorded photo GPS');
+    await expect(popup.getByRole('link')).toHaveCount(0);
     const camera = region.locator('.maplibregl-canvas');
     await expect(camera).toHaveAttribute('data-camera-moving', 'false');
     const before = await camera.getAttribute('data-camera');

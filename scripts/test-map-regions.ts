@@ -5,8 +5,12 @@ import { getMapRegion, mapRegions } from '../lib/map-regions';
 test('trip ids select regional maps without inspecting or inventing photo GPS', () => {
   assert.equal(getMapRegion('bali'), mapRegions.bali);
   assert.equal(getMapRegion('taiwan'), mapRegions.taiwan);
+  assert.equal(getMapRegion('siquijor'), mapRegions.siquijor);
+  assert.equal(getMapRegion('toString'), mapRegions.taiwan);
   assert.equal(getMapRegion('legacy-trip'), mapRegions.taiwan);
   assert.equal(getMapRegion('bali', 'taiwan'), mapRegions.taiwan);
+  assert.equal(getMapRegion('legacy-trip', 'siquijor'), mapRegions.siquijor);
+  assert.equal(getMapRegion('siquijor', 'bali'), mapRegions.bali);
 });
 
 test('regional archives and PMTiles FileSource cache keys remain distinct', () => {
@@ -23,6 +27,7 @@ test('regional archives and PMTiles FileSource cache keys remain distinct', () =
     assert.ok(maxWest <= west && west < east && east <= maxEast);
     assert.ok(maxSouth <= south && south < north && north <= maxNorth);
     assert.ok(region.minZoom > 0 && region.minZoom < 17);
+    assert.ok(region.archiveMaxZoom >= region.minZoom && region.archiveMaxZoom < 17);
   }
 });
 
@@ -32,4 +37,13 @@ test('Taiwan camera defaults are preserved and Bali covers its island', () => {
   assert.equal(mapRegions.taiwan.minZoom, 5.7);
   assert.deepEqual(mapRegions.bali.bounds, [114.4, -8.95, 115.75, -8.05]);
   assert.equal(mapRegions.bali.archive, '/maps/bali.pmtiles');
+});
+
+test('Siquijor uses its own island overview and higher-detail archive zoom', () => {
+  assert.deepEqual(mapRegions.siquijor.bounds, [123.4, 9.05, 123.76, 9.3]);
+  assert.deepEqual(mapRegions.siquijor.maxBounds, [123.35, 8.95, 123.85, 9.4]);
+  assert.equal(mapRegions.siquijor.minZoom, 9);
+  assert.equal(mapRegions.siquijor.archiveMaxZoom, 12);
+  assert.equal(mapRegions.taiwan.archiveMaxZoom, 9);
+  assert.equal(mapRegions.bali.archiveMaxZoom, 9);
 });

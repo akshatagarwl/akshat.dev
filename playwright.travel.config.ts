@@ -3,7 +3,7 @@ import base from './playwright.config';
 
 export default defineConfig({
   ...base,
-  testMatch: 'travel-preview.spec.ts',
+  testMatch: ['travel-preview.spec.ts', 'siquijor-preview.spec.ts'],
   workers: 2,
   expect: { timeout: 15_000 },
   use: { ...base.use, baseURL: 'http://127.0.0.1:4323' },
