@@ -128,6 +128,51 @@ test('Taiwan previews honor selected captions, the bridge label and the repair-p
   }
 });
 
+test('gallery maps align with the shared site column at every screen width', async ({ page }) => {
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ['/travels', '/travels/taiwan']) {
+      await page.goto(route);
+      const header = (await page.locator('.site-header').boundingBox())!;
+      const map = (await page.locator('.trip-map').boundingBox())!;
+      expect(map.x).toBeCloseTo(header.x, 0);
+      expect(map.width).toBeCloseTo(header.width, 0);
+      expect(map.width).toBeLessThanOrEqual(640);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    }
+  }
+});
+
+test('media navigation stays visible in a short landscape viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 568, height: 320 });
+  await page.goto('/travels/taiwan');
+  const first = page.locator('.map-strip-card[data-media-id="taipei-evening"]');
+  await first.focus();
+  await first.press('Enter');
+  await first.press('Enter');
+  const dialog = page.getByRole('dialog');
+  for (let index = 0; index < 9; index++) {
+    if (index) await page.keyboard.press('ArrowRight');
+    await expect(dialog.getByRole('navigation')).toBeInViewport({ ratio: 1 });
+    await expect(dialog.getByRole('button', { name: 'close', exact: true })).toBeInViewport({ ratio: 1 });
+  }
+});
+
+test('dialog gutters do not dismiss media, but the backdrop does', async ({ page }) => {
+  await page.goto('/travels/taiwan');
+  const first = page.locator('.map-strip-card[data-media-id="taipei-evening"]');
+  await first.focus();
+  await first.press('Enter');
+  await first.press('Enter');
+  const dialog = page.getByRole('dialog');
+  const box = (await dialog.boundingBox())!;
+  await page.mouse.click(box.x + 4, box.y + 40);
+  await expect(dialog).toBeVisible();
+  await page.mouse.click(box.x - 5, box.y + 40);
+  await expect(dialog).not.toBeVisible();
+  await expect(first).toBeFocused();
+});
+
 test('Allo is self-hosted, variable, licensed and the only preloaded font', async ({ page, request }) => {
   const fontPath = '/fonts/allo/AlloVariable.woff2';
   const packageFont = readFileSync('node_modules/allo-font/fonts/webfonts/AlloVariable.woff2');

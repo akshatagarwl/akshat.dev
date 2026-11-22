@@ -134,7 +134,11 @@ export function TripMap({ trip, href }: { trip: Trip; href?: string }) {
         setModal(false);
         setIndex(null);
       }
-    }} onClick={event => { if (event.target === event.currentTarget) viewer.current?.close(); }} onKeyDown={navigate}>
+    }} onClick={event => {
+      if (event.target !== event.currentTarget) return;
+      const bounds = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) viewer.current?.close();
+    }} onKeyDown={navigate}>
       <header><div><h2 id={`viewer-${trip.id}`}>{active?.place ?? trip.title}</h2>{active && <time dateTime={active.date}>{tripDate(active.date)}</time>}</div><Button onClick={() => viewer.current?.close()}>close</Button></header>
       {modal && videoContent}
       {selected && <figure><img src={selected.photo.original?.src ?? selected.photo.src} alt={selected.photo.alt} width={selected.photo.original?.width ?? selected.photo.width} height={selected.photo.original?.height ?? selected.photo.height} />{selected.photo.caption !== null && <figcaption className="media-description">{selected.photo.caption ?? selected.photo.alt}</figcaption>}</figure>}

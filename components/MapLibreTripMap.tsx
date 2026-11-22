@@ -7,11 +7,17 @@ import Map, { Layer, Source, Marker, NavigationControl, ScaleControl, type MapRe
 import * as maplibre from 'maplibre-gl';
 import { FileSource, PMTiles, Protocol } from 'pmtiles';
 import { Play } from 'lucide-react';
+import { cubicBezier } from 'motion';
 import type { RecordedGps, Trip, TripMapItem, TripPhoto, TripVideo } from '@/lib/trips';
 import { tripDate, tripMedia, videoPosition } from '@/lib/trips';
 import style from '@/data/map-style.json';
 
-// MapLibre owns geography, projection, camera and marker positioning.
+// Motion supplies the curve; MapLibre owns the camera and reduced-motion behavior.
+const cameraTransition = {
+  duration: 650,
+  easing: cubicBezier(0.22, 1, 0.36, 1),
+  essential: false,
+};
 const protocol = new Protocol();
 maplibre.addProtocol('pmtiles', protocol.tile);
 maplibre.setWorkerUrl('/maps/maplibre-worker.mjs');
@@ -52,6 +58,7 @@ export default function MapLibreTripMap({
     const map = ref.current;
     if (!map || !trip.draft) return;
     const center = map.getCenter(), padding = map.getPadding();
+    map.getCanvas().dataset.cameraMoving = String(map.isMoving());
     map.getCanvas().dataset.camera = JSON.stringify([
       center.lng, center.lat, map.getZoom(), map.getBearing(), map.getPitch(),
       padding.top, padding.bottom, padding.left, padding.right,
@@ -73,11 +80,11 @@ export default function MapLibreTripMap({
     if (crowded.length && map.getZoom() < 9.5) {
       const bounds = new maplibre.LngLatBounds(item.gps, item.gps);
       crowded.forEach(other => bounds.extend(other.gps));
-      map.fitBounds(bounds, { duration: 0, maxZoom: 9.5, absolutePadding: true,
+      map.fitBounds(bounds, { ...cameraTransition, maxZoom: 9.5, absolutePadding: true,
         padding: { top: 140, bottom: 180, left: 50, right: 50 } });
     } else if (point.x < 30 || point.x > container.clientWidth - 30 ||
       point.y < 130 || point.y > container.clientHeight - 160) {
-      map.panTo(item.gps, { duration: 0 });
+      map.panTo(item.gps, cameraTransition);
     }
   };
 
@@ -167,14 +174,14 @@ export default function MapLibreTripMap({
     ...style, glyphs: `${location.origin}${style.glyphs}`, sprite: `${location.origin}${style.sprite}`,
     sources: { protomaps: { ...style.sources.protomaps, url: 'pmtiles://taiwan.pmtiles' } },
   }) as maplibre.StyleSpecification, []);
-  const fit = () => {
+  const fit = (animate = false) => {
     const map = ref.current;
     if (!map || !located.length) return;
     const bounds = new maplibre.LngLatBounds();
     for (const item of located) bounds.extend(item.gps);
     const narrow = map.getContainer().clientWidth < 600;
     map.fitBounds(bounds, {
-      absolutePadding: true, maxZoom: 12, duration: 0,
+      absolutePadding: true, maxZoom: 12, ...(animate ? cameraTransition : { duration: 0 }),
       padding: {
         top: 150, bottom: narrow ? 220 : 180,
         left: narrow ? 44 : 120, right: narrow ? 44 : 120,
@@ -189,7 +196,7 @@ export default function MapLibreTripMap({
     scrollZoom={false} touchZoomRotate={false} dragRotate={false} doubleClickZoom={false}
     cooperativeGestures fadeDuration={0} renderWorldCopies={false}
     onResize={() => { if (activeVideo?.track) fitPlayback(); recordCamera(); }}
-    onMoveEnd={recordCamera} onIdle={recordCamera}
+    onMoveStart={recordCamera} onMoveEnd={recordCamera} onIdle={recordCamera}
     onLoad={event => {
       event.target.once('webglcontextlost', onFailure);
       event.target.resize(); fit(); recordCamera(); onReady();
@@ -197,7 +204,7 @@ export default function MapLibreTripMap({
     onError={event => { console.warn('Local map unavailable:', event.error.message); onFailure(); }}>
     <NavigationControl position="top-right" showCompass={false} />
     <ScaleControl position="bottom-left" />
-    <Button className="map-fit" onClick={fit}>Fit Taiwan</Button>
+    <Button className="map-fit" onClick={() => fit(true)}>Fit Taiwan</Button>
     {activeVideo?.track && <Source id="recorded-video-route" type="geojson" data={route}>
       <Layer id="recorded-video-route-line" type="line"
         paint={{ 'line-color': '#175e9b', 'line-width': 3, 'line-opacity': .75 }} />
@@ -237,6 +244,7 @@ export default function MapLibreTripMap({
           }}
           onClick={() => {
             if (selected !== item.id) { select(item); return; }
+            ref.current?.stop();
             if (item.kind === 'photo') onPhoto(item.media);
             else onVideo(item.media);
           }}>

@@ -61,6 +61,7 @@ test('chronological polaroids fit a desktop row or a bounded swipe strip without
   await expect(cards).toHaveCount(mediaCount);
   await expect(page.locator('[data-overlapping="true"]')).toHaveCount(0);
   const stage = (await page.locator('.trip-map-stage').boundingBox())!;
+  const stripFits = await page.locator('.map-media-strip').evaluate(element => element.scrollWidth <= element.clientWidth);
   const rectangles = await page.locator('.map-polaroid').evaluateAll(elements =>
     elements.map(element => {
       const box = element.getBoundingClientRect();
@@ -72,7 +73,7 @@ test('chronological polaroids fit a desktop row or a bounded swipe strip without
       return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
     }));
   for (const [index, rectangle] of rectangles.entries()) {
-    if (page.viewportSize()!.width >= 1200) {
+    if (stripFits) {
       expect(rectangle.left).toBeGreaterThanOrEqual(stage.x);
       expect(rectangle.right).toBeLessThanOrEqual(stage.x + stage.width);
     }
@@ -95,6 +96,11 @@ test('chronological polaroids fit a desktop row or a bounded swipe strip without
   }
   expect(await cards.first().locator('time').evaluate(element => getComputedStyle(element).fontVariantNumeric))
     .toBe('tabular-nums');
+  if (!stripFits) {
+    await cards.last().focus();
+    await expect(cards.last()).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
+  }
 });
 
 test('each pin matches its original GPS exactly, not its stop; one zoom separates nearby pins', async ({ page }) => {
@@ -264,6 +270,34 @@ test('swiping the native strip selects a card and its exact pin', async ({ brows
   await context.close();
 });
 
+test('deliberate location changes animate, but reduced motion jumps directly', async ({ page }) => {
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+    await page.emulateMedia({ reducedMotion });
+    await ready(page);
+    const marker = pin(page, 'hualien-north');
+    const camera = page.locator('.maplibregl-canvas');
+    const before = await camera.getAttribute('data-camera');
+    await marker.evaluate(element => {
+      const target = element.parentElement!;
+      const samples = new Set([target.style.transform]);
+      target.dataset.cameraSamples = JSON.stringify([...samples]);
+      new MutationObserver(() => {
+        samples.add(target.style.transform);
+        target.dataset.cameraSamples = JSON.stringify([...samples]);
+      }).observe(target, { attributes: true, attributeFilter: ['style'] });
+    });
+    await card(page, 'hualien-north').focus();
+    await card(page, 'hualien-north').press('Enter');
+    await expect(camera).not.toHaveAttribute('data-camera', before!);
+    await expect(camera).toHaveAttribute('data-camera-moving', 'false');
+    const count = await marker.evaluate(element =>
+      JSON.parse(element.parentElement!.dataset.cameraSamples!).length);
+    if (reducedMotion === 'reduce') expect(count).toBeLessThanOrEqual(2);
+    else expect(count).toBeGreaterThan(2);
+    await expect(marker).toHaveAttribute('aria-pressed', 'true');
+  }
+});
+
 test('native map controls zoom, fit and keyboard pan; wheel still scrolls the page', async ({ page }) => {
   await ready(page);
   const camera = page.locator('.maplibregl-canvas');
@@ -391,6 +425,7 @@ test('video is click-to-play, decodes real frames, and stops on close', async ({
   expect(requests).toEqual([]);
   await card(page, 'coast-ride').focus();
   await card(page, 'coast-ride').press('Enter');
+  await expect(cameraReference).toHaveAttribute('data-camera-moving', 'false');
   const originalView = await cameraReference.getAttribute('data-camera');
   await openMedia(page, 'coast-ride');
   const dialog = page.locator('.video-viewer'), video = dialog.locator('video');
