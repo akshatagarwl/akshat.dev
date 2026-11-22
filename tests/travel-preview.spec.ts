@@ -30,6 +30,9 @@ test('maintained MapLibre component is the only travel surface and dates are vis
   page.on('pageerror', e => errors.push(e.message));
   page.on('response', r => { if (r.status() >= 400) failures.push(r.url()); });
   await page.goto('/');
+  await expect(page.locator('.trip-map, #travels')).toHaveCount(0);
+  await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' }).click();
+  await expect(page.getByRole('heading', { name: 'gallery', exact: true })).toBeVisible();
   await page.locator('#travels .trip-cover').click();
   await expect(page.locator('.trip-map')).toHaveAttribute('data-renderer', 'maplibre');
   await expect(page.locator('.maplibregl-canvas')).toBeVisible();

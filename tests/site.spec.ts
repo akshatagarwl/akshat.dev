@@ -3,6 +3,10 @@ import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import projects from '../data/projects.json' with { type: 'json' };
 import links from '../data/links.json' with { type: 'json' };
+import tripsData from '../data/trips.json' with { type: 'json' };
+import { parseTrips, tripMedia } from '../lib/trips';
+
+const approvedTrips = parseTrips(tripsData);
 
 async function ready(page: Page) {
   await page.goto('/');
@@ -11,7 +15,34 @@ async function ready(page: Page) {
 const fixture = () => readFileSync(new URL('../.generated/travel-fixture.html', import.meta.url), 'utf8');
 async function diaryFixture(page: Page) {
   await page.route('**/travels/fixture-*', route => route.fulfill({ path: 'public/garden-fallback.png', contentType: 'image/png' }));
+  // Exercise the legacy fallback alone, never beside the approved map gallery.
+  await expect(page.locator('.travel-entry')).toHaveCount(0);
+  await page.locator('.trip-gallery').evaluateAll(elements => elements.forEach(element => element.remove()));
   await page.locator('#notes').evaluate((section, html) => { section.insertAdjacentHTML('beforebegin', html); }, fixture());
+}
+
+async function approvedFallback(page: Page) {
+  if (!approvedTrips.length) return;
+  await page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' }).click();
+  await expect(page).toHaveURL(/\/travels$/);
+  await expect(page.locator('.trip-map')).toHaveCount(approvedTrips.length);
+  for (const trip of approvedTrips) {
+    const map = page.getByRole('region', { name: `${trip.title} travel map`, exact: true });
+    await expect(map.locator('.map-poster')).toBeVisible();
+    await expect
+      .poll(() => map.locator('.map-poster').evaluate((image: HTMLImageElement) => image.naturalWidth))
+      .toBeGreaterThan(0);
+    await map.locator('summary').click();
+    const media = tripMedia(trip);
+    await expect(map.locator('.map-static-photos a')).toHaveCount(media.length);
+    for (const item of media) {
+      const link = map.locator(`.map-static-photos a[href="${item.media.original?.src ?? item.media.src}"]`);
+      await expect(link).toBeVisible();
+      await expect(link).toContainText(item.place);
+      await expect(link.locator('time')).toHaveAttribute('datetime', item.date);
+    }
+  }
+  await page.getByRole('link', { name: 'back home', exact: true }).click();
 }
 
 test('no selectors, less copy, original links and light mode without external requests', async ({ page }) => {
@@ -32,10 +63,29 @@ test('no selectors, less copy, original links and light mode without external re
   await expect(page.locator('.reading-list a:visible')).toHaveCount(6);
   expect((await page.locator('main').innerText()).split(/\s+/).length).toBeLessThan(210);
   await expect(page.locator('#notes')).toContainText('agent notes — not for human eyes');
-  await expect(page.locator('#travels')).toHaveCount(0);
+  await expect(page.locator('#travels, .trip-gallery, .trip-map, .maplibregl-canvas')).toHaveCount(0);
+  const gallery = page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' });
+  await expect(gallery).toHaveCount(approvedTrips.length ? 1 : 0);
+  if (approvedTrips.length) await expect(gallery).toHaveAttribute('href', '/travels');
   await expect(page.locator('.travel-entry')).toHaveCount(0);
   await page.waitForLoadState('networkidle');
   expect(errors).toEqual([]); expect(external).toEqual([]);
+});
+
+test('Gallery navigation works by keyboard and keeps trips off the homepage', async ({ page }) => {
+  test.skip(!approvedTrips.length, 'No approved gallery to navigate.');
+  await ready(page);
+  const gallery = page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' });
+  await gallery.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/travels$/);
+  await expect(page.getByRole('heading', { name: 'gallery', exact: true })).toBeVisible();
+  for (const trip of approvedTrips) {
+    await expect(page.locator(`.trip-cover[href="/travels/${trip.id}"]`)).toHaveText(trip.title);
+  }
+  await page.locator('.trip-cover').first().click();
+  await expect(page).toHaveURL(`/travels/${approvedTrips[0].id}`);
+  await expect(page.getByRole('region', { name: `${approvedTrips[0].title} travel map`, exact: true })).toBeVisible();
 });
 
 test('Allo is self-hosted, variable, licensed and the only preloaded font', async ({ page, request }) => {
@@ -99,7 +149,7 @@ test('old theme preferences have no effect on home or notes', async ({ page }) =
 test('blocked storage leaves the site usable', async ({ page }) => {
   await page.addInitScript(() => { Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('blocked', 'SecurityError'); } }); });
   await ready(page);
-  await page.locator('summary').click();
+  await page.locator('#links summary').click();
   await expect(page.locator(`#links a[href="${links.at(-1)!.url}"]`)).toBeVisible();
 });
 
@@ -110,8 +160,9 @@ test('no JavaScript retains flowers, the reading disclosure and complete notes',
   await expect(page.getByRole('button')).toHaveCount(0);
   await expect(page.locator('.garden-main .garden-fallback')).toBeVisible();
   expect(await page.locator('.garden-main img').evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
-  await page.locator('summary').click();
+  await page.locator('#links summary').click();
   await expect(page.locator(`#links a[href="${links.at(-1)!.url}"]`)).toBeVisible();
+  await approvedFallback(page);
   await expect(page.locator('.roadside-scene')).toHaveCount(0);
   await diaryFixture(page);
   await expect(page.getByRole('heading', { name: 'Coast page' })).toBeVisible();
@@ -128,11 +179,11 @@ test('links and native reading disclosure work by keyboard', async ({ page }) =>
   await ready(page);
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
-  await page.locator('summary').focus();
+  await page.locator('#links summary').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('details')).toHaveAttribute('open', '');
+  await expect(page.locator('#links details')).toHaveAttribute('open', '');
   await page.keyboard.press('Tab');
-  await expect(page.locator('details a').first()).toBeFocused();
+  await expect(page.locator('#links details a').first()).toBeFocused();
 });
 
 test('Seedbed flowers bloom in many colors and sleep after leaving', async ({ page }) => {
@@ -160,7 +211,11 @@ test('Seedbed flowers bloom in many colors and sleep after leaving', async ({ pa
   await page.waitForTimeout(200);
   expect(Number(await canvas.getAttribute('data-draws'))).toBeGreaterThan(before + 3);
   await page.mouse.move(0, 0);
-  await page.waitForTimeout(4200);
+  await expect.poll(async () => {
+    const draws = await canvas.getAttribute('data-draws');
+    await page.waitForTimeout(250);
+    return await canvas.getAttribute('data-draws') === draws;
+  }, { timeout: 10_000 }).toBe(true);
   const settled = await canvas.getAttribute('data-draws');
   await page.waitForTimeout(250);
   expect(await canvas.getAttribute('data-draws')).toBe(settled);
@@ -197,6 +252,7 @@ test('Canvas failure retains flowers and navigation', async ({ page }) => {
   await ready(page);
   await expect(page.locator('.garden-main .garden-fallback')).toBeVisible();
   await expect(page.locator('#notes a').first()).toBeVisible();
+  await approvedFallback(page);
 });
 
 test('bicycle follows native scrolling, reverses, and becomes still for reduced motion', async ({ page }) => {
@@ -279,8 +335,15 @@ test('built assets preserve redirects, metadata, headers and real 404s', async (
   expect((await request.get('/sitemap.xml')).status()).toBe(200);
   expect((await request.get('/robots.txt')).status()).toBe(200);
   expect((await request.get('/not-a-real-page')).status()).toBe(404);
-  expect((await request.get('/travels')).status()).toBe(404);
-  expect((await request.get('/travels/taiwan')).status()).toBe(404);
+  expect((await request.get('/travels')).status()).toBe(approvedTrips.length ? 200 : 404);
+  for (const trip of approvedTrips) {
+    const response = await request.get(`/travels/${trip.id}`);
+    expect(response.status()).toBe(200);
+    const html = await response.text();
+    expect(html).toContain(`${trip.title} travel map`);
+    expect(html).not.toMatch(/travels\/preview\/|travel-draft|Unreviewed audio\/captions/);
+  }
+  expect((await request.get('/travels/not-an-approved-trip')).status()).toBe(404);
   expect((await request.get('/travels/preview/taiwan/train-640.webp')).status()).toBe(404);
 });
 

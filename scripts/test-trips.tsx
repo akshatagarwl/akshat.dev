@@ -37,6 +37,33 @@ for (const gps of [[181, 23], [121, 85], [NaN, 23], [121], ['121', 23]]) {
   assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], photos: [{ ...image, gps }] }] }));
 }
 for (const src of ['https://example.com/clip.mp4', '/travels/../clip.mp4', '/travels/a/clipXmp4', '/travels/a/clip.mp4?gps=1']) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, src }] }] }));
+const hostedSrc = 'https://media.akshat.dev/travels/taiwan/clip-123abc.mp4';
+const hostedVideo = {
+  ...video,
+  src: hostedSrc,
+  original: { src: hostedSrc, mime: 'video/mp4; codecs="avc1.640028"', width: 1920, height: 1080 },
+};
+const parseVideo = (clip: unknown) => parse({
+  ...valid,
+  stops: [{ ...valid.stops[0], videos: [clip] }],
+});
+assert.equal(parseVideo(hostedVideo)[0].stops[0].videos?.[0].src, hostedSrc);
+assert.equal(parseVideo(hostedVideo)[0].stops[0].videos?.[0].original?.src, hostedSrc);
+for (const src of [
+  'http://media.akshat.dev/travels/taiwan/clip.mp4',
+  'https://media.akshat.dev.evil.example/travels/taiwan/clip.mp4',
+  'https://media.akshat.dev@evil.example/travels/taiwan/clip.mp4',
+  '//media.akshat.dev/travels/taiwan/clip.mp4',
+  `${hostedSrc}?token=secret`,
+  `${hostedSrc}#fragment`,
+  'https://media.akshat.dev/travels/../clip.mp4',
+  'https://media.akshat.dev/travels/taiwan/%2e%2e/clip.mp4',
+]) {
+  assert.throws(() => parseVideo({ ...video, src }));
+  assert.throws(() => parseVideo({ ...hostedVideo, original: { ...hostedVideo.original, src } }));
+}
+assert.throws(() => parseVideo({ ...video, poster: 'https://media.akshat.dev/travels/taiwan/poster.webp' }));
+assert.throws(() => parse({ ...valid, cover: { ...image, src: 'https://media.akshat.dev/travels/taiwan/photo.webp' } }));
 for (const duration of [0, -1, Infinity, NaN]) assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, duration }] }] }));
 assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, id: image.id }] }] }));
 assert.throws(() => parse({ ...valid, stops: [{ ...valid.stops[0], videos: [{ ...video, captions: 'https://example.com/captions.vtt' }] }] }));

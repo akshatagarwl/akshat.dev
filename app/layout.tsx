@@ -9,6 +9,7 @@ import './globals.css';
 import './travels/travel.css';
 import FlowerGarden from '@/components/FlowerGarden';
 import { Margins } from '@/components/Landscape';
+import { readTrips } from '@/lib/read-trips';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://akshat.dev'),
@@ -29,7 +30,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <FlowerGarden side="left" />
       <FlowerGarden side="right" />
       <div className="site-shell">
-        <header className="site-header"><a className="site-brand" href="/" aria-label="Akshat home">akshat.dev</a></header>
+        <header className="site-header">
+          <a className="site-brand" href="/" aria-label="Akshat home">akshat.dev</a>
+          {readTrips().length > 0 && <nav aria-label="Main"><a href="/travels">Gallery</a></nav>}
+        </header>
         <main id="main" data-content>{children}</main>
         <footer className="site-footer"><a href="https://github.com/akshatagarwl/akshat.dev" target="_blank" rel="noopener noreferrer">source</a><a href="https://github.com/VedSoni-dev/seedbed" target="_blank" rel="noopener noreferrer">garden by seedbed</a></footer>
       </div>

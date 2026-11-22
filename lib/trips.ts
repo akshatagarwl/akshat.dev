@@ -6,12 +6,15 @@ export type TripVideo = { gps?: RecordedGps; original?: OriginalMedia & { mime: 
 export type TripStop = { id: string; place: string; date?: string; location?: [number, number]; locationNote?: string; note?: string; photos: TripPhoto[]; videos?: TripVideo[] };
 export type Trip = { id: string; title: string; month: string; cover: TripPhoto; stops: TripStop[]; draft?: boolean };
 
+// Videos too large for static assets are served from the public R2 bucket on this origin.
+export const MEDIA_ORIGIN = 'https://media.akshat.dev';
+const mediaPath = (extension: string) => new RegExp(`^(?:${MEDIA_ORIGIN.replaceAll('.', '\\.')})?/travels/(?:[a-z0-9-]+/)+[a-z0-9-]+\\.${extension}$`);
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim();
 const slug = (v: unknown): v is string => text(v) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v);
 function original(value: unknown, extension: 'webp' | 'mp4'): OriginalMedia | undefined {
   if (value === undefined) return;
-  if (!object(value) || !text(value.src) || !new RegExp(`^/travels/(?:[a-z0-9-]+/)+[a-z0-9-]+\\.${extension}$`).test(value.src) || ![value.width, value.height].every(n => typeof n === 'number' && Number.isInteger(n) && n > 0 && n <= 12000)) throw new Error('Original-quality media needs a safe local path and valid dimensions.');
+  if (!object(value) || !text(value.src) || !(extension === 'mp4' ? mediaPath('mp4') : new RegExp(`^/travels/(?:[a-z0-9-]+/)+[a-z0-9-]+\\.${extension}$`)).test(value.src) || ![value.width, value.height].every(n => typeof n === 'number' && Number.isInteger(n) && n > 0 && n <= 12000)) throw new Error('Original-quality media needs a safe local or approved video-host path and valid dimensions.');
   return { src: value.src, width: value.width as number, height: value.height as number };
 }
 function recordedGps(value: unknown): RecordedGps | undefined {
@@ -33,7 +36,7 @@ function photo(value: unknown): TripPhoto {
 
 function video(value: unknown): TripVideo {
   const local = (path: unknown, extension: string) => text(path) && new RegExp(`^/travels/(?:[a-z0-9-]+/)+[a-z0-9-]+\\.${extension}$`).test(path);
-  if (!object(value) || !slug(value.id) || !local(value.src, 'mp4') || !local(value.poster, 'webp') || !text(value.title)) throw new Error('Videos need an id, local MP4/poster and descriptive title.');
+  if (!object(value) || !slug(value.id) || !(text(value.src) && mediaPath('mp4').test(value.src)) || !local(value.poster, 'webp') || !text(value.title)) throw new Error('Videos need an id, a local or approved hosted MP4, a local poster and descriptive title.');
   if (![value.width, value.height].every(n => typeof n === 'number' && Number.isInteger(n) && n > 0 && n <= 12000) || typeof value.duration !== 'number' || !Number.isFinite(value.duration) || value.duration <= 0) throw new Error('Videos need valid dimensions and duration.');
   if (value.captions !== undefined && !local(value.captions, 'vtt')) throw new Error('Captions must be a local VTT file.');
   if (value.track !== undefined && (!Array.isArray(value.track) || value.track.length < 2 || value.track.length > 10000 || value.track.some((point, i, all) => !Array.isArray(point) || point.length !== 3 || !point.every(n => typeof n === 'number' && Number.isFinite(n)) || point[0] < 0 || point[0] > (value.duration as number) || Math.abs(point[1]) > 180 || Math.abs(point[2]) >= 85 || (i > 0 && point[0] <= all[i - 1][0])))) throw new Error('Recorded GPS needs ordered, finite relative-time samples within the video.');

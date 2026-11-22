@@ -3,14 +3,18 @@ import { parseTrips } from '../lib/trips';
 
 export async function prepareTrips() {
   const preview = process.env.TRAVEL_PREVIEW === '1';
+  const draftsOnly = process.env.TRAVEL_PREVIEW_DRAFTS_ONLY === '1';
+  if (draftsOnly && !preview) throw new Error('TRAVEL_PREVIEW_DRAFTS_ONLY requires TRAVEL_PREVIEW=1.');
   if (preview && (process.env.CI || process.env.WORKERS_CI)) throw new Error('Private travel previews cannot be built for CI/publication.');
   const approved = parseTrips(JSON.parse(await readFile('data/trips.json', 'utf8')));
   if (approved.some(t => t.draft || JSON.stringify(t).includes('/travels/preview/'))) throw new Error('Drafts/preview assets cannot appear in approved trips.');
+  // Validate approved records even when isolating a promoted trip's legacy private draft.
+  const includedApproved = draftsOnly ? [] : approved;
   // Only generated preview copies are removed; originals and approved assets are never touched.
   await rm('public/travels/preview', { recursive: true, force: true });
   const drafts = preview ? parseTrips(JSON.parse(await readFile('.generated/travel-draft/trips.json', 'utf8'))) : [];
   for (const trip of drafts) {
-    if (!trip.draft || approved.some(t => t.id === trip.id)) throw new Error('Preview records must be distinct, explicitly marked drafts.');
+    if (!trip.draft || includedApproved.some(t => t.id === trip.id)) throw new Error('Preview records must be distinct, explicitly marked drafts.');
     for (const stop of trip.stops) for (const p of stop.photos) {
       const prefix = `/travels/preview/${trip.id}/`;
       if (!p.src.startsWith(prefix) || !p.src.endsWith('-1800.webp')) throw new Error('Preview media must be sanitized generated WebP images.');
@@ -34,6 +38,6 @@ export async function prepareTrips() {
     }
   }
   await mkdir('.generated', { recursive: true });
-  await writeFile('.generated/trips.json', JSON.stringify([...approved, ...drafts]));
-  console.log(`Prepared ${approved.length} approved trips${preview ? ` and ${drafts.length} private previews` : '; no draft assets exported'}.`);
+  await writeFile('.generated/trips.json', JSON.stringify([...includedApproved, ...drafts]));
+  console.log(`Prepared ${includedApproved.length} approved trips${preview ? ` and ${drafts.length} private previews` : '; no draft assets exported'}.`);
 }
