@@ -51,6 +51,7 @@
             "id": "hualien-north",
             "src": "/travels/taiwan/hualien-north-1800.webp",
             "alt": "A tree-lined road and green mountains beneath large clouds near Hualien.",
+            "caption": null,
             "width": 1800,
             "height": 2400,
             "original": {
@@ -63,15 +64,22 @@
               24.0524361111111
             ]
           }
-        ],
+        ]
+      },
+      {
+        "id": "guosheng-bridge",
+        "date": "2026-10-17",
+        "place": "Guosheng Bridge",
+        "photos": [],
         "videos": [
           {
             "id": "hualien-ride",
-            "src": "https://media.akshat.dev/travels/taiwan/hualien-ride-hq-259d23250226.mp4",
+            "src": "https://media.akshat.dev/travels/taiwan/hualien-ride-original-29d38109391c.mp4",
             "poster": "/travels/taiwan/hualien-ride-hq-poster.webp",
             "title": "A short bicycle ride across Guosheng Bridge in Hualien.",
-            "width": 1920,
-            "height": 1080,
+            "caption": null,
+            "width": 2704,
+            "height": 1520,
             "duration": 15.048367,
             "original": {
               "src": "https://media.akshat.dev/travels/taiwan/hualien-ride-original-29d38109391c.mp4",
@@ -129,11 +137,12 @@
             "id": "coast-photo",
             "src": "/travels/taiwan/coast-photo-1800.webp",
             "alt": "Cyclists tending to loaded bicycles beside a green-lined coastal road.",
+            "caption": "If you’re planning to bike across the country, it wouldn’t hurt to learn a thing or two about basic bicycle repair. Thankfully, I found a few people who helped me out.",
             "width": 1800,
-            "height": 1350,
+            "height": 1688,
             "original": {
               "src": "/travels/taiwan/coast-photo-original.webp",
-              "width": 5568,
+              "width": 4454,
               "height": 4176
             },
             "gps": [
@@ -145,11 +154,12 @@
         "videos": [
           {
             "id": "coast-ride",
-            "src": "https://media.akshat.dev/travels/taiwan/coast-ride-hq-27edd9e0c979.mp4",
+            "src": "https://media.akshat.dev/travels/taiwan/coast-ride-original-4d7557c662ee.mp4",
             "poster": "/travels/taiwan/coast-ride-original-poster.webp",
             "title": "A coastal road with palm trees, mountains and the sea in Taiwan.",
-            "width": 1920,
-            "height": 1080,
+            "caption": null,
+            "width": 3840,
+            "height": 2160,
             "duration": 173.940433,
             "track": [
               [
@@ -1050,6 +1060,7 @@
             "id": "taipei-evening",
             "src": "/travels/taiwan/taipei-evening-1800.webp",
             "alt": "Taipei 101 illuminated against the night sky.",
+            "caption": "Taipei 101 must feel lonely.",
             "width": 1800,
             "height": 2400,
             "original": {
@@ -1078,6 +1089,7 @@
             "id": "taitung-coast",
             "src": "/travels/taiwan/taitung-coast-1800.webp",
             "alt": "A loaded bicycle beside a coastal road, with palm trees and the sea beyond.",
+            "caption": "My Huandao bicycle.",
             "width": 1800,
             "height": 1800,
             "original": {
@@ -1105,11 +1117,12 @@
         "videos": [
           {
             "id": "lotus-pond",
-            "src": "https://media.akshat.dev/travels/taiwan/lotus-pond-preview-194a8c54a8f2.mp4",
+            "src": "https://media.akshat.dev/travels/taiwan/lotus-pond-original-896c5e0b1edb.mp4",
             "poster": "/travels/taiwan/lotus-pond-preview-poster.webp",
             "title": "Musicians performing on the steps of Qiming Temple in Kaohsiung at night.",
-            "width": 608,
-            "height": 1080,
+            "caption": null,
+            "width": 1080,
+            "height": 1920,
             "duration": 22.17,
             "original": {
               "src": "https://media.akshat.dev/travels/taiwan/lotus-pond-original-896c5e0b1edb.mp4",

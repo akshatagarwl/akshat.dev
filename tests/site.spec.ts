@@ -76,6 +76,13 @@ test('Gallery navigation works by keyboard and keeps trips off the homepage', as
   test.skip(!approvedTrips.length, 'No approved gallery to navigate.');
   await ready(page);
   const gallery = page.getByRole('navigation', { name: 'Main', exact: true }).getByRole('link', { name: 'Gallery' });
+  const typography = (element: Element) => {
+    const style = getComputedStyle(element);
+    return { size: style.fontSize, family: style.fontFamily, weight: style.fontWeight };
+  };
+  const brandTypography = await page.locator('.site-brand').evaluate(typography);
+  expect(await gallery.evaluate(typography)).toEqual(brandTypography);
+  expect(brandTypography.size).toBe('12px');
   await gallery.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/travels$/);
@@ -86,6 +93,39 @@ test('Gallery navigation works by keyboard and keeps trips off the homepage', as
   await page.locator('.trip-cover').first().click();
   await expect(page).toHaveURL(`/travels/${approvedTrips[0].id}`);
   await expect(page.getByRole('region', { name: `${approvedTrips[0].title} travel map`, exact: true })).toBeVisible();
+});
+
+test('Taiwan previews honor selected captions, the bridge label and the repair-photo crop', async ({ page }) => {
+  const taiwan = approvedTrips.find(trip => trip.id === 'taiwan');
+  test.skip(!taiwan, 'No approved Taiwan trip.');
+  const items = tripMedia(taiwan!);
+  await page.goto('/travels/taiwan');
+  const first = page.locator(`.map-strip-card[data-media-id="${items[0].id}"]`);
+  await first.focus();
+  await first.press('Enter');
+  await first.press('Enter');
+  const dialog = page.getByRole('dialog');
+  for (const [index, item] of items.entries()) {
+    if (index) await page.keyboard.press('ArrowRight');
+    await expect(dialog.getByRole('heading')).toHaveText(item.place);
+    const caption = item.media.caption;
+    const description = dialog.locator('.media-description');
+    if (caption === null) {
+      await expect(description).toHaveCount(0);
+    } else {
+      const fallback = item.kind === 'photo' ? item.media.alt : item.media.title;
+      await expect(description).toHaveText(caption ?? fallback);
+    }
+    if (item.id === 'coast-photo') {
+      await expect.poll(() => dialog.locator('img').evaluate((image: HTMLImageElement) =>
+        [image.naturalWidth, image.naturalHeight])).toEqual([4454, 4176]);
+      await expect(description).toBeInViewport({ ratio: 1 });
+      await expect(dialog.getByRole('navigation')).toBeInViewport({ ratio: 1 });
+    }
+    if (item.id === 'hualien-ride') {
+      await expect(dialog.getByRole('heading')).toHaveText('Guosheng Bridge');
+    }
+  }
 });
 
 test('Allo is self-hosted, variable, licensed and the only preloaded font', async ({ page, request }) => {

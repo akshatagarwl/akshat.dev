@@ -3,6 +3,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { parseTrips, photoSrcSet, tripDate, tripMedia, videoDuration, videoPosition, type VideoPosition } from '../lib/trips';
 import { TravelGallery } from '../components/TravelGallery';
+import publishedTrips from '../data/trips.json' with { type: 'json' };
 
 const image = { id: 'sample', src: '/travels/fixture/sample-1800.webp', alt: 'Clearly labelled test photograph.', width: 1800, height: 1800 };
 const valid = { id: 'fixture', title: 'Test trip <script>', month: '2025-06', cover: image, stops: [{ id: 'test-place', place: 'Test place', location: [121, 23], photos: [image] }] };
@@ -47,6 +48,27 @@ const parseVideo = (clip: unknown) => parse({
   ...valid,
   stops: [{ ...valid.stops[0], videos: [clip] }],
 });
+const parsePhoto = (photo: unknown) => parse({
+  ...valid,
+  stops: [{ ...valid.stops[0], photos: [photo] }],
+})[0].stops[0].photos[0];
+for (const caption of [undefined, null, 'my Huandao bicycle']) {
+  const photo = parsePhoto({ ...image, caption });
+  const clip = parseVideo({ ...video, caption, captions: '/travels/fixture/captions.vtt' })[0].stops[0].videos![0];
+  assert.equal(photo.caption, caption);
+  assert.equal(photo.alt, image.alt, 'Visible captions must not replace accessible photo text.');
+  assert.equal(clip.caption, caption);
+  assert.equal(clip.title, video.title, 'Visible captions must not replace accessible video titles.');
+  assert.equal(clip.captions, '/travels/fixture/captions.vtt', 'VTT captions are independent of descriptions.');
+}
+for (const caption of ['', '   ', 0, false, [], {}]) {
+  assert.throws(() => parsePhoto({ ...image, caption }));
+  assert.throws(() => parseVideo({ ...video, caption }));
+}
+assert.equal(parsePhoto(image).caption, undefined);
+assert.equal(parseVideo(video)[0].stops[0].videos![0].caption, undefined);
+assert.throws(() => parsePhoto({ ...image, caption: null, alt: '' }));
+assert.throws(() => parseVideo({ ...video, caption: null, title: '' }));
 assert.equal(parseVideo(hostedVideo)[0].stops[0].videos?.[0].src, hostedSrc);
 assert.equal(parseVideo(hostedVideo)[0].stops[0].videos?.[0].original?.src, hostedSrc);
 for (const src of [
@@ -82,4 +104,10 @@ assert.match(photoSrcSet(image)!, /sample-640.webp 640w/);
 const html = renderToStaticMarkup(<TravelGallery trips={parse(valid)} />);
 assert.ok(html.includes('&lt;script&gt;') && !html.includes('<script>'));
 assert.ok(html.includes('/travels/fixture'));
+const taiwan = parseTrips(publishedTrips).find(trip => trip.id === 'taiwan');
+for (const clip of taiwan?.stops.flatMap(stop => stop.videos ?? []) ?? []) {
+  assert.ok(clip.original, 'Published Taiwan videos require original-quality media.');
+  assert.equal(clip.src, clip.original.src, 'Published playback must not use reduced-resolution derivatives.');
+  assert.deepEqual([clip.width, clip.height], [clip.original.width, clip.original.height]);
+}
 console.log('Trip checks pass: validation, local media, bounds, empty gallery, escaping, responsive photos and real date-only values.');

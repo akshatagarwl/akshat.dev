@@ -55,8 +55,8 @@ button:disabled { cursor: default; }
 .skip-link { position: fixed; left: 20px; top: -100px; z-index: 5; padding: 8px 16px; background: var(--paper); }
 .skip-link:focus { top: 12px; }
 .site-shell { position: relative; max-width: 640px; margin: 0 auto; padding: 38px 0 30px; }
-.site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 60px; }
-.site-brand { font-size: 12px; text-decoration: none; white-space: nowrap; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 60px; font-size: 12px; }
+.site-brand { text-decoration: none; white-space: nowrap; }
 h1, h2 { font-family: var(--font-allo), 'Newsreader Variable', Georgia, serif; font-weight: 580; font-variation-settings: 'opsz' 32, 'ROND' 70; letter-spacing: -.025em; }
 h1 { font-size: clamp(40px, 5vw, 52px); line-height: 1.06; margin: 0 0 16px; }
 h2 { font-size: 30px; line-height: 1.18; margin: 0 0 18px; }
