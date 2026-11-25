@@ -20,7 +20,7 @@ Approved records go in initially empty `data/trips.json`. Until then, the galler
 
 ## Run
 
-Use Node/Bun pinned in `mise.toml`:
+Enter the Nix dev shell (Node 26 and Bun, with Next.js and Wrangler telemetry off) with `nix develop`, or let direnv load it with `use flake`:
 
 ```sh
 bun install --frozen-lockfile
